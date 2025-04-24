@@ -1,0 +1,74 @@
+{
+    "name": "@variablesoftware/mock-d1",
+    "version": "0.0.0",
+    "description": "Mock D1 Database implementation for testing Cloudflare Workers",
+    "keywords": [
+        "cloudflare",
+        "d1",
+        "mock",
+        "test",
+        "miniflare",
+        "typescript"
+    ],
+    "author": {
+        "name": "Rob Friedman",
+        "email": "bunkcode@variablesoftware.com",
+        "url": "https://github.com/variablesoftware"
+    },
+    "main": "dist/src/index.js",
+    "types": "dist/src/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/src/index.js",
+            "types": "./dist/src/index.d.ts"
+        }
+    },
+    "type": "module",
+    "lint-staged": {
+        "**/*.{ts,js,mjs,cts}": "eslint --fix"
+    },
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist",
+        "clean:all": "rm -rf dist && git tag -d $(git tag)",
+        "dev": "vitest watch",
+        "prepare": "husky install",
+        "format": "yarn format:all",
+        "format:all": "prettier --write --log-level error .",
+        "lint": "eslint . --ext .ts,.tsx",
+        "lint:fix": "eslint . --ext .ts,.tsx --fix",
+        "prettier:check": "prettier --check .",
+        "publish:npm": "yarn npm publish --access public",
+        "test": "vitest run",
+        "test:build": "yarn clean && yarn build && yarn test",
+        "upgrade:latest": "yarn upgrade-interactive --latest",
+        "version:patch": "yarn version patch",
+        "version:minor": "yarn version minor",
+        "version:major": "yarn version major",
+        "release": "git push && git push --tags && yarn npm publish --access public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/variablesoftware/mock-d1"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@eslint/js": "^9.25.1",
+        "@types/node": "^22.14.1",
+        "@typescript-eslint/eslint-plugin": "^8.31.0",
+        "@typescript-eslint/parser": "^8.31.0",
+        "eslint": "^9.25.1",
+        "eslint-config-prettier": "^10.1.2",
+        "husky": "^9.1.7",
+        "prettier": "^3.5.3",
+        "typescript": "^5.8.3",
+        "vitest": "^3.1.2"
+    },
+    "packageManager": "yarn@4.9.1+sha512.f95ce356460e05be48d66401c1ae64ef84d163dd689964962c6888a9810865e39097a5e9de748876c2e0bf89b232d583c33982773e9903ae7a76257270986538",
+    "dependencies": {
+        "@variablesoftware/logface": "0.1.7"
+    }
+}

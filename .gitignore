@@ -1,0 +1,35 @@
+# Yarn PnP loader files (Yarn 2+)
+.pnp.*
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Node dependencies
+node_modules/
+.yarn/
+
+# Output directories
+dist/
+coverage/
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Test snapshots / temp
+*.snap
+*.tsbuildinfo
+
+# Environment and credentials
+.env
+.env.local
+
+# Binaries / archives
+*.tar.*
+*.zip
