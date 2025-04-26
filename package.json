@@ -1,7 +1,7 @@
 {
     "name": "@variablesoftware/mock-d1",
     "version": "0.0.0",
-    "description": "Mock D1 Database implementation for testing Cloudflare Workers",
+    "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
     "keywords": [
         "cloudflare",
         "d1",
@@ -69,6 +69,6 @@
     },
     "packageManager": "yarn@4.9.1+sha512.f95ce356460e05be48d66401c1ae64ef84d163dd689964962c6888a9810865e39097a5e9de748876c2e0bf89b232d583c33982773e9903ae7a76257270986538",
     "dependencies": {
-        "@variablesoftware/logface": "0.1.7"
+        "@variablesoftware/logface": "0.1.8"
     }
 }
