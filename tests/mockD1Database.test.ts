@@ -136,7 +136,7 @@ describe("mockD1Database", () => {
 
     await db.prepare(`CREATE TABLE ${table}`).run();
     const insert = db.prepare(
-      `INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`
+      `INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`,
     );
     const data = randomData([colA, colB]);
     const result = await insert.bind(data).run();
@@ -161,7 +161,9 @@ describe("mockD1Database", () => {
     db.inject(table, rows);
 
     const stmt = db
-      .prepare(`DELETE FROM ${table} WHERE status = :s OR org = :o AND status = :s2`)
+      .prepare(
+        `DELETE FROM ${table} WHERE status = :s OR org = :o AND status = :s2`,
+      )
       .bind({ s: "pending", o: "abc", s2: "active" });
 
     const result = await stmt.run();
@@ -205,11 +207,15 @@ describe("butter churn 🧈", () => {
       const colB = randomSnake(1);
       const data = randomData([colA, colB]);
 
-      const insert = db.prepare(`INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`);
+      const insert = db.prepare(
+        `INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`,
+      );
       await insert.bind(data).run();
       inserts++;
 
-      const query = db.prepare(`SELECT * FROM ${table} WHERE ${colA} = :${colA} OR ${colB} = :${colB}`);
+      const query = db.prepare(
+        `SELECT * FROM ${table} WHERE ${colA} = :${colA} OR ${colB} = :${colB}`,
+      );
       const result = await query.bind(data).all();
       selects++;
       totalResults += result.results.length;
@@ -220,7 +226,11 @@ describe("butter churn 🧈", () => {
 
     console.log(`[butter churn] completed ${count} cycles`);
     console.log(`[butter churn] inserts: ${inserts}, selects: ${selects}`);
-    console.log(`[butter churn] total SELECT results returned: ${totalResults}`);
-    console.log(`[butter churn] avg results per SELECT: ${(totalResults / Math.max(1, selects)).toFixed(2)}`);
+    console.log(
+      `[butter churn] total SELECT results returned: ${totalResults}`,
+    );
+    console.log(
+      `[butter churn] avg results per SELECT: ${(totalResults / Math.max(1, selects)).toFixed(2)}`,
+    );
   });
 });

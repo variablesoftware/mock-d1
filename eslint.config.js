@@ -1,18 +1,18 @@
-import js from '@eslint/js';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import prettier from 'eslint-config-prettier/flat';
+import js from "@eslint/js";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import prettier from "eslint-config-prettier/flat";
 
 export default [
   {
-    ignores: ['**/dist/**', '**/.pnp.*'],
+    ignores: ["**/dist/**", "**/.pnp.*"],
   },
   {
     languageOptions: {
       parser: tsParser,
       parserOptions: {
         ecmaVersion: 2022,
-        sourceType: 'module',
+        sourceType: "module",
       },
       globals: {
         console: true,
@@ -20,15 +20,15 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': tsPlugin,
+      "@typescript-eslint": tsPlugin,
     },
   },
   js.configs.recommended,
   {
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-console': 'off',
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "no-console": "off",
     },
   },
   prettier,

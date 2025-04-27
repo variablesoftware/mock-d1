@@ -1,10 +1,10 @@
-# @variablesoftware/mock-d1
+# @variablesoftware/mock-d1 🎛️🗂️🧠
 
 [![Test Suite](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/variablesoftware/mock-d1/actions)
 
 **Mock Cloudflare D1 Database for unit and integration testing**
 
-`@variablesoftware/mock-d1` provides an in-memory simulation of Cloudflare's D1 SQLite-compatible database. It enables fast, isolated, and predictable testing of SQL-backed applications without relying on external services.
+🎛️🗂️🧠 `@variablesoftware/mock-d1` provides an in-memory simulation of Cloudflare's D1 SQLite-compatible database. It enables fast, isolated, and predictable testing of SQL-backed applications without relying on external services.
 
 ---
 
@@ -21,16 +21,14 @@ yarn add --dev @variablesoftware/mock-d1
 ## 🚀 Usage
 
 ```ts
-import { mockD1Database } from '@variablesoftware/mock-d1';
+import { mockD1Database } from "@variablesoftware/mock-d1";
 
 const db = mockD1Database({
-  sessions: [
-    { sub: 'user-123', jti: 'token-abc', created: Date.now() }
-  ]
+  sessions: [{ sub: "user-123", jti: "token-abc", created: Date.now() }],
 });
 
 const stmt = db.prepare("SELECT * FROM sessions WHERE sub = ?");
-stmt.bind('user-123');
+stmt.bind("user-123");
 const result = await stmt.all();
 
 console.log(result.results); // [{ sub: 'user-123', ... }]
@@ -63,12 +61,14 @@ console.log(result.results); // [{ sub: 'user-123', ... }]
 ## 🧪 Test Coverage
 
 Tested using `vitest run`, with coverage for:
+
 - The "butter churn" suite stress-tests `mockD1Database()` with randomized insert/select/delete operations to simulate real query volume
 - Basic SELECT queries
 - Parameter binding
 - Return shape matching Cloudflare's `D1Result`
 
 Run tests:
+
 ```bash
 yarn test
 ```
@@ -80,9 +80,12 @@ yarn test
 **This package is under active development and not yet stable.**
 
 Once stable, it will be published as:
+
 ```json
 "@variablesoftware/mock-d1": "^0.1.0"
 ```
+
+---
 
 ## 📄 License
 
@@ -90,10 +93,17 @@ MIT © Rob Friedman / Variable Software
 
 ---
 
+> Built with ❤️ by [@variablesoftware](https://github.com/variablesoftware)  
+> Thank you for downloading and using this project. Pull requests are warmly welcomed!
+
+---
+
 ## 🌐 Inclusive & Accessible Design
 
-- Avoids assumptions about data type usage and intent
-- Does not make coercive or opinionated transformations of stored values
-- Designed for clarity, parity, and transparency with real D1 behavior
-- Naming, error messages, and test data avoid cultural or ableist bias
-- Useful in diverse developer environments with minimal surprise
+- Naming, logging, error messages, and tests avoid cultural or ableist bias
+- Avoids assumptions about input/output formats or encodings
+- Faithfully reflects user data — no coercion or silent transformations
+- Designed for clarity, predictability, and parity with underlying platforms (e.g., Cloudflare APIs)
+- Works well in diverse, multilingual, and inclusive developer environments
+
+---
