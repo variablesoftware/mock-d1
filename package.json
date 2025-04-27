@@ -1,6 +1,6 @@
 {
   "name": "@variablesoftware/mock-d1",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
   "keywords": [
     "cloudflare",
@@ -44,7 +44,7 @@
     "publish:npm": "yarn npm publish --access public",
     "test": "vitest run",
     "test:build": "yarn clean && yarn build && yarn test",
-    "upgrade:latest": "yarn upgrade-interactive --latest",
+    "upgrade:latest": "yarn upgrade-interactive",
     "version:patch": "yarn version patch",
     "version:minor": "yarn version minor",
     "version:major": "yarn version major",
@@ -56,9 +56,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250426.0",
+    "@cloudflare/workers-types": "^4.20250427.0",
     "@eslint/js": "^9.25.1",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.2",
     "@typescript-eslint/eslint-plugin": "^8.31.0",
     "@typescript-eslint/parser": "^8.31.0",
     "eslint": "^9.25.1",
