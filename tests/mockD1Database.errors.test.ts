@@ -1,5 +1,14 @@
+/**
+ * @fileoverview
+ * Error and malformed query tests for mockD1Database.
+ * Ensures the mock correctly throws on invalid SQL, unsupported features, and bind mismatches.
+ *
+ * @see mockD1Database.basic.test.ts for basic CRUD tests.
+ */
 import { mockD1Database } from "../src/mockD1Database";
 import { describe, expect, test } from "vitest";
+
+process.env.LOG = 'none' || process.env.LOG;
 
 describe("malformed queries", () => {
   test("should throw on invalid SQL syntax", () => {

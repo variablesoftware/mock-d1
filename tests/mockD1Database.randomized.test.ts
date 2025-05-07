@@ -1,9 +1,24 @@
+/**
+ * @fileoverview
+ * Randomized and parallel stress test suites for mockD1Database.
+ *
+ * - The first suite ("butter churn 🧈 (stress testing)") runs a short, single-threaded randomized workload
+ *   to verify stability and correctness under rapid create/insert/select cycles.
+ * - The second suite ("butter churn 🧈 (vigorous parallel stress testing)") runs multiple randomized workers
+ *   in parallel to simulate heavy concurrent usage and uncover edge cases.
+ *
+ * @see mockD1Database.stress.test.ts for a focused single-threaded stress test.
+ */
 import { mockD1Database } from "../src/mockD1Database";
 import { randomSnake, randomData } from "./helpers";
 import { describe, expect, test } from "vitest";
 
-process.env.LOG = 'none';
+process.env.LOG = 'none' || process.env.LOG;
 
+/**
+ * Runs a short-duration, single-threaded stress test with randomized table and column names.
+ * Verifies that the mock database can handle rapid create/insert/select cycles.
+ */
 describe("butter churn 🧈 (stress testing)", () => {
   test("stress mockD1Database for a short duration", async () => {
     const db = mockD1Database();
@@ -43,6 +58,10 @@ describe("butter churn 🧈 (stress testing)", () => {
   });
 });
 
+/**
+ * Runs a vigorous, parallelized stress test with randomized queries and schema.
+ * Simulates concurrent usage to uncover edge cases and concurrency issues.
+ */
 describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
   test(
     "stress mockD1Database with parallel randomized queries",

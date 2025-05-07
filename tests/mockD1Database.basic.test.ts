@@ -1,6 +1,16 @@
+/**
+ * @fileoverview
+ * Basic CRUD and query tests for mockD1Database.
+ * Covers positive-path usage, named binds, AND/OR logic, table creation, and deletion.
+ *
+ * @see mockD1Database.errors.test.ts for error/malformed query tests.
+ * @see mockD1Database.stress.test.ts and mockD1Database.randomized.test.ts for stress and randomized tests.
+ */
 import { mockD1Database } from "../src/mockD1Database";
 import { randomSnake, randomData } from "./helpers";
 import { describe, expect, test } from "vitest";
+
+process.env.LOG = 'none' || process.env.LOG;
 
 describe("mockD1Database", () => {
   test("should return injected session data when stubbed after creation", async () => {
