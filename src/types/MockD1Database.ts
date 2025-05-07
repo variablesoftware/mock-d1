@@ -15,11 +15,9 @@ export interface D1Row {
 /**
  * Represents the result of a D1 database operation.
  */
-export interface FakeD1Result {
-  success: true;
-  duration: number;
-  changes?: number;
-  results?: D1Row[];
+export interface FakeD1Result<T = unknown> {
+  results: T[];
+  success: boolean;
   meta: {
     duration: number;
     size_after: number;
@@ -28,7 +26,6 @@ export interface FakeD1Result {
     last_row_id: number;
     changed_db: boolean;
     changes: number;
-    [key: string]: unknown;
   };
 }
 

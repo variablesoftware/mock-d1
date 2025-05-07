@@ -167,6 +167,9 @@ export function createPreparedStatement(
     async run() { return parseAndRun("run"); },
     async all() { return parseAndRun("all"); },
     async first() { return parseAndRun("first"); },
-    async raw() { return parseAndRun("raw"); },
+    async raw() {
+      const result = await parseAndRun("all");
+      return result.results ?? [];
+    },
   };
 }

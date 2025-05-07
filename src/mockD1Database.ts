@@ -1,5 +1,5 @@
 /*
- * mockD1Database.ts v2 🧈 (updated for named bind support)
+ * mockD1Database.ts v3 🧈 (updated for named bind support)
  *
  * A lightweight, test-optimized mock of Cloudflare's D1Database interface.
  * Designed for Workers unit testing without requiring a live D1 instance.
@@ -37,9 +37,8 @@
 
 // Remove: // @ts-nocheck
 
-import { D1Result } from "@cloudflare/workers-types";
 import { log } from "@variablesoftware/logface";
-import { D1Row, MockD1PreparedStatement } from "./types/MockD1Database";
+import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
 import { createPreparedStatement } from "./engine/mockD1PreparedStatement";
 
 export function mockD1Database(): unknown {
@@ -52,8 +51,8 @@ export function mockD1Database(): unknown {
 
   return {
     prepare,
-    batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<D1Result<T>[]> => {
-      return Promise.all(statements.map(stmt => stmt.run()));
+    batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]> => {
+      return Promise.all(statements.map(stmt => stmt.run() as Promise<FakeD1Result<T>>));
     },
     dump(): Record<string, { rows: D1Row[] }> {
       // Return a shallow copy of the db map as an object
@@ -64,8 +63,8 @@ export function mockD1Database(): unknown {
     },
     withSession: () => ({
       prepare,
-      batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<D1Result<T>[]> => {
-        return Promise.all(statements.map(stmt => stmt.run()));
+      batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]> => {
+        return Promise.all(statements.map(stmt => stmt.run() as Promise<FakeD1Result<T>>));
       },
       getBookmark: () => null,
     }),
