@@ -15,7 +15,7 @@ import { log } from "@variablesoftware/logface";
 export function createPreparedStatement(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
-  __logger: ReturnType<typeof log.withTag> // <-- double underscore
+  _logger: ReturnType<typeof log.withTag> // <-- use a single underscore
 ): MockD1PreparedStatement {
   // Throw on unsupported SQL at prepare-time
   if (

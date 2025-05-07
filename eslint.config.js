@@ -28,6 +28,7 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "no-console": "off",
     },
   },
