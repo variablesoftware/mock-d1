@@ -32,6 +32,9 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch",
+    "build:release": "yarn build && yarn minify",
+    "minify": "yarn terser --timings --compress --mangle --toplevel --source-map includeSources dist/src/index.js dist/src/mockD1Database.js --output dist/src/index.min.js",
     "clean": "rm -rf dist",
     "clean:all": "rm -rf dist && git tag -d $(git tag)",
     "dev": "vitest watch",
@@ -65,6 +68,7 @@
     "eslint-config-prettier": "^10.1.2",
     "husky": "^9.1.7",
     "prettier": "^3.5.3",
+    "terser": "^5.39.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   },

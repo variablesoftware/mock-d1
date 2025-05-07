@@ -1,0 +1,67 @@
+name: Dependabot Auto Test, Bump & Publish
+
+permissions:
+  contents: read # to be able to publish a GitHub release
+#  issues: write # to be able to comment on released issues
+#  pull-requests: write # to be able to comment on released pull requests
+#  id-token: write # to enable use of OIDC for npm provenance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - "*.x"
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - run: corepack enable && corepack prepare yarn@4.9.1 --activate
+      - run: yarn install --immutable
+      - run: yarn test:build
+
+  # doesn't actually work, yet.
+  test-bump-and-publish-test:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        # Unexpected input(s) 'foo', valid inputs are ['always-auth', 'node-version', 'node-version-file', 'architecture', 'check-latest', 'registry-url', 'scope', 'token', 'cache', 'cache-dependency-path', 'mirror', 'mirror-token']
+        with:
+          #always-auth: true
+          #check-latest: true
+          node-version: "lts/*"
+          #registry-url: "https://registry.npmjs.org/"
+          #scope: ${SCOPE}
+          #token: ${NPM_TOKEN}
+          #token: ${{secrets.VS_NPM_TOKEN}}
+          #token: ${VS_NPM_TOKEN}
+      - run: corepack enable && corepack prepare yarn@4.9.1 --activate
+      #- run: yarn --version
+      - run: yarn install --immutable
+      #- run: cat /home/runner/work/_temp/.npmrc
+      #- run: cat /home/runner/work/_temp/.yarnrc.yml
+        #- run: yarn add -D husky
+        #- run: yarn npm whoami --scope ${{secrets.scope}} --publish
+        #- run: yarn npm publish --access public
+        #- run: yarn npm publish --provenance --access public
+      - run: yarn semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCOPE: ${{secrets.scope}}
+          NODE_AUTH_TOKEN: ${{ secrets.VS_NPM_TOKEN}}
+          NPM_TOKEN: ${{ secrets.VS_NPM_TOKEN}}
+          #YARN_NPM_CONFIG_PROVENANCE:
