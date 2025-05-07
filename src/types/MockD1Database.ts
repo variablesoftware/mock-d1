@@ -15,7 +15,30 @@ export interface D1Row {
 /**
  * Represents the result of a D1 database operation.
  */
-export interface D1Result {
-  success: boolean;
+export interface FakeD1Result {
+  success: true;
+  duration: number;
   changes?: number;
+  results?: D1Row[];
+  meta: {
+    duration: number;
+    size_after: number;
+    rows_read: number;
+    rows_written: number;
+    last_row_id: number;
+    changed_db: boolean;
+    changes: number;
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * Represents a prepared statement in the mock D1 database.
+ */
+export interface MockD1PreparedStatement {
+  bind(_args: Record<string, unknown>): MockD1PreparedStatement;
+  run(): Promise<FakeD1Result>;
+  all(): Promise<FakeD1Result>;
+  first(): Promise<FakeD1Result>;
+  raw(): Promise<unknown[]>;
 }
