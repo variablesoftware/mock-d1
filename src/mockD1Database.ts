@@ -35,13 +35,10 @@
  *   - ORDER BY, LIMIT
  */
 
-// @ts-nocheck
+// Remove: // @ts-nocheck
 
 import {
   D1Result,
-  D1Database,
-  D1PreparedStatement,
-  D1DatabaseSession,
 } from "@cloudflare/workers-types";
 import { log } from "@variablesoftware/logface";
 
@@ -68,16 +65,16 @@ interface FakeD1Result {
 }
 
 interface MockD1PreparedStatement {
-  bind(args: Record<string, unknown>): MockD1PreparedStatement;
+  bind(_args: Record<string, unknown>): MockD1PreparedStatement;
   run(): Promise<FakeD1Result>;
   all(): Promise<FakeD1Result>;
   first(): Promise<FakeD1Result>;
-  raw(): Promise<any[]>;
+  raw(): Promise<unknown[]>;
 }
 
 // -------------------------
 
-export function mockD1Database(): any {
+export function mockD1Database(): unknown {
   const logger = log.withTag("mockD1");
   logger.info("mockD1Database instantiated");
   const db = new Map<string, { rows: D1Row[] }>();
@@ -129,8 +126,8 @@ export function mockD1Database(): any {
     }
 
     const stmt: MockD1PreparedStatement = {
-      bind(args: Record<string, unknown>) {
-        bindArgs = args;
+      bind(_args: Record<string, unknown>) {
+        bindArgs = _args;
         return this;
       },
 
@@ -299,18 +296,6 @@ export function mockD1Database(): any {
             },
           };
 
-        const filtered = rows.filter((row) => {
-          return whereClause.split(/\s+or\s+/i).some((orGroup) => {
-            return orGroup.split(/\s+and\s+/i).every((cond) => {
-              const [key, , param] = cond.trim().split(/\s+/);
-              const argKey = param.replace(/^:/, "");
-              if (!(argKey in bindArgs))
-                throw new Error(`Missing bind for :${argKey}`);
-              return row[key] === bindArgs[argKey];
-            });
-          });
-        });
-
         return {
           results,
           success: true,
@@ -360,7 +345,7 @@ export function mockD1Database(): any {
     prepare,
 
     batch: async <T = unknown>(
-      statements: D1PreparedStatement[],
+      statements: MockD1PreparedStatement[],
     ): Promise<D1Result<T>[]> =>
       statements.map(() => ({
         results: [],
@@ -384,10 +369,10 @@ export function mockD1Database(): any {
       db.set(table, { rows });
     },
 
-    withSession: (_constraintOrBookmark?: string) => ({
+    withSession: () => ({
       prepare,
       batch: async <T = unknown>(
-        statements: D1PreparedStatement[],
+        statements: MockD1PreparedStatement[], // <-- change here
       ): Promise<D1Result<T>[]> =>
         statements.map(() => ({
           results: [],

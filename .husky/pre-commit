@@ -1,2 +1,3 @@
+set -x
 yarn lint
 gitleaks dir . || exit 1

@@ -1,3 +1,10 @@
+# .gitignore
+# This file is used to ignore files and directories that should not be tracked by Git.
+# It is a good practice to keep this file updated to avoid committing unnecessary files.
+
+# junk text, find a better name OK?
+docs/text*.txt
+
 # Yarn PnP loader files (Yarn 2+)
 .pnp.*
 .yarn/cache/

@@ -12,5 +12,5 @@
     "declarationDir": "./dist",
     "types": ["vitest"]
   },
-  "include": ["src", "tests"]
+  "include": ["src"]
 }

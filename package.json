@@ -15,15 +15,15 @@
     "email": "bunkcode@variablesoftware.com",
     "url": "https://github.com/variablesoftware"
   },
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "exports": {
-    ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+    "dist": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "type": "module",
@@ -31,27 +31,34 @@
     "**/*.{ts,js,mjs,cts}": "eslint --fix"
   },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "build:release": "yarn build && yarn minify",
-    "minify": "yarn terser --timings --compress --mangle --toplevel --source-map includeSources dist/src/index.js dist/src/mockD1Database.js --output dist/src/index.min.js",
+    "build": "tsc && yarn minify; ls -lah dist",
+    "prepare": "yarn husky install",
+    "watch:build": "tsc --watch",
+    "build:release": "yarn build",
+    "minify:options": "yarn terser --timings --compress --mangle --toplevel --source-map includeSources ",
+    "minify": "yarn minify:options dist/index.js dist/mockD1Database.js dist/lib/random.js --output dist/index.min.js",
+    "prebuild": "yarn clean",
+    "prepublishOnly": "yarn test:build",
     "clean": "rm -rf dist",
-    "clean:all": "rm -rf dist && git tag -d $(git tag)",
-    "dev": "vitest watch",
-    "prepare": "husky install",
+    "clean:all:tags": "rm -rf dist && git tag -d $(git tag)",
+    "dev": "yarn vitest watch",
     "format": "yarn format:all",
     "format:all": "prettier --write --log-level error .",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint --stats . --ext .ts,.tsx",
+    "lint:fix": "eslint --stats . --ext .ts,.tsx --fix-dry-run",
+    "lint:fix:nodry": "eslint --stats . --ext .ts,.tsx --fix",
     "prettier:check": "prettier --check .",
     "publish:npm": "yarn npm publish --access public",
     "test": "vitest run",
-    "test:build": "yarn clean && yarn build && yarn test",
-    "upgrade:latest": "yarn upgrade-interactive",
-    "version:patch": "yarn version patch",
-    "version:minor": "yarn version minor",
-    "version:major": "yarn version major",
-    "release": "git push && git push --tags && yarn npm publish --access public"
+    "watch:test": "yarn vitest --watch",
+    "build:test": "yarn clean && yarn build && yarn test",
+    "corepack:go": "corepack enable && corepack prepare yarn@4.9.1 --activate",
+    "upgrade:latest": "yarn set version stable && yarn upgrade-interactive",
+    ":patch": "yarn version patch",
+    ":minor": "yarn version minor",
+    ":major": "yarn version major",
+    "release": "yarn clean && yarn build:release && git push && git push --tags && yarn npm publish --access public",
+    "release:dry": "yarn clean && yarn build:release && npm pack --dry-run"
   },
   "repository": {
     "type": "git",
