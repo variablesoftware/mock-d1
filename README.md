@@ -2,7 +2,7 @@
 
 [![Test Suite](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/variablesoftware/mock-d1/actions)
 [![NPM version](https://img.shields.io/npm/v/@variablesoftware/mock-d1?style=flat-square)](https://www.npmjs.com/package/@variablesoftware/mock-d1)
-[![License](https://img.shields.io/github/license/variablesoftware/mock-d1?style=flat-square)](https://github.com/variablesoftware/mock-d1/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/variablesoftware/mock-d1?style=flat-square)](https://github.com/variablesoftware/mock-d1/blob/main/LICENSE.txt)
 
 **Mock Cloudflare D1 Database for unit and integration testing**
 

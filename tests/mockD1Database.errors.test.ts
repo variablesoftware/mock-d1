@@ -8,7 +8,7 @@
 import { mockD1Database } from "../src/mockD1Database";
 import { describe, expect, test } from "vitest";
 
-process.env.LOG = 'none' || process.env.LOG;
+// process.env.LOG = 'none' || process.env.LOG;
 
 describe("malformed queries", () => {
   test("should throw on invalid SQL syntax", () => {

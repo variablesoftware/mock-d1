@@ -15,7 +15,7 @@ import { log } from "@variablesoftware/logface";
 export function createPreparedStatement(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
-  _logger: ReturnType<typeof log.withTag> // <-- use a single underscore
+  _logger: ReturnType<typeof log> // <-- use a single underscore
 ): MockD1PreparedStatement {
   // Throw on unsupported SQL at prepare-time
   if (
@@ -30,7 +30,8 @@ export function createPreparedStatement(
     !/^create table(?: if not exists)? [a-zA-Z0-9_]+/i.test(sql) &&
     !/^insert into [a-zA-Z0-9_]+/i.test(sql) &&
     !/^select \* from [a-zA-Z0-9_]+/i.test(sql) &&
-    !/^delete from [a-zA-Z0-9_]+/i.test(sql)
+    !/^delete from [a-zA-Z0-9_]+/i.test(sql) &&
+    !/^update [a-zA-Z0-9_]+ set /i.test(sql) // <-- add this line
   ) {
     throw new Error("Malformed or unsupported SQL syntax.");
   }
@@ -153,6 +154,42 @@ export function createPreparedStatement(
           },
         };
       }
+    }
+
+    // UPDATE <table> SET <col> = :val WHERE <col2> = :val2
+    if (/^update [a-zA-Z0-9_]+ set /i.test(sql)) {
+      const tableMatch = sql.match(/^update ([a-zA-Z0-9_]+) set /i);
+      if (!tableMatch) throw new Error("Malformed UPDATE statement.");
+      const table = tableMatch[1];
+      const setMatch = sql.match(/set ([a-zA-Z0-9_]+)\s*=\s*:(\w+)/i);
+      const whereMatch = sql.match(/where ([a-zA-Z0-9_]+)\s*=\s*:(\w+)/i);
+      if (!setMatch || !whereMatch) throw new Error("Only simple UPDATE ... SET col = :val WHERE col2 = :val2 supported.");
+      const [, setCol, setBind] = setMatch;
+      const [, whereCol, whereBind] = whereMatch;
+      if (!(setBind in bindArgs)) throw new Error(`Missing bind argument: ${setBind}`);
+      if (!(whereBind in bindArgs)) throw new Error(`Missing bind argument: ${whereBind}`);
+      const tableObj = db.get(table);
+      if (!tableObj) throw new Error(`Table not found: ${table}`);
+      let changes = 0;
+      for (const row of tableObj.rows) {
+        if (row[whereCol] === bindArgs[whereBind]) {
+          row[setCol] = bindArgs[setBind];
+          changes++;
+        }
+      }
+      return {
+        success: true,
+        results: [],
+        meta: {
+          duration: 0,
+          size_after: 0,
+          rows_read: changes,
+          rows_written: changes,
+          last_row_id: 0,
+          changed_db: changes > 0,
+          changes,
+        },
+      };
     }
 
     // Default: throw for unsupported SQL

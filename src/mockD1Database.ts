@@ -45,6 +45,13 @@ export function mockD1Database(): unknown {
   const logger = log.withTag("mockD1");
   const db = new Map<string, { rows: D1Row[] }>();
 
+  function dbStats(){
+    logger.debug("initialized");
+  logger.debug("db size", db.size);
+   }
+  
+  dbStats();
+
   function prepare(sql: string): MockD1PreparedStatement {
     return createPreparedStatement(sql, db, logger);
   }
@@ -55,6 +62,7 @@ export function mockD1Database(): unknown {
       return Promise.all(statements.map(stmt => stmt.run() as Promise<FakeD1Result<T>>));
     },
     dump(): Record<string, { rows: D1Row[] }> {
+      dbStats();
       // Return a shallow copy of the db map as an object
       return Object.fromEntries(db.entries());
     },

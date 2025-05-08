@@ -1,18 +1,23 @@
 /**
  * @fileoverview
- * Single-threaded stress test suite for mockD1Database.
- * Runs a short, randomized workload to verify stability and correctness under rapid create/insert/select cycles.
+ * Randomized and parallel stress test suites for mockD1Database.
  *
- * @see mockD1Database.randomized.test.ts for parallel/vigorous stress tests.
+ * - The first suite ("butter churn 🧈 (stress testing)") runs a short, single-threaded randomized workload
+ *   to verify stability and correctness under rapid create/insert/select cycles.
+ * - The second suite ("butter churn 🧈 (vigorous parallel stress testing)") runs multiple randomized workers
+ *   in parallel to simulate heavy concurrent usage and uncover edge cases.
+ *
+ * @see mockD1Database.stress.test.ts for a focused single-threaded stress test.
  */
 import { mockD1Database } from "../src/mockD1Database";
 import { randomSnake, randomData } from "./helpers";
 import { describe, expect, test } from "vitest";
 
+import { log } from "@variablesoftware/logface";
 // process.env.LOG = 'none' || process.env.LOG;
 
 /**
- * Runs a short-duration stress test with randomized table and column names.
+ * Runs a short-duration, single-threaded stress test with randomized table and column names.
  * Verifies that the mock database can handle rapid create/insert/select cycles.
  */
 describe("butter churn 🧈 (stress testing)", () => {
@@ -43,12 +48,23 @@ describe("butter churn 🧈 (stress testing)", () => {
       totalResults += result.results.length;
       expect(result.results.length).toBeGreaterThanOrEqual(0);
       count++;
+
+      if (Math.random() < 0.2 && db.dump) { // 20% chance per cycle, and only if dump() is available
+        const tables = Object.keys(db.dump());
+        if (tables.length > 0) {
+          const dropTable = tables[Math.floor(Math.random() * tables.length)];
+          // If your mock supports DROP TABLE:
+          // await db.prepare(`DROP TABLE ${dropTable}`).run();
+          // Or, if not, just remove from the map:
+          db.inject(dropTable, []); // or db._drop(dropTable) if you have such a helper
+        }
+      }
     }
 
-    console.log(`[butter churn] completed ${count} cycles`);
-    console.log(`[butter churn] inserts: ${inserts}, selects: ${selects}`);
-    console.log(`[butter churn] total SELECT results returned: ${totalResults}`);
-    console.log(
+    log.log(`[churn] completed ${count} cycles`);
+    log.log(`[churn] inserts: ${inserts}, selects: ${selects}`);
+    log.log(`[churn] total SELECT results returned: ${totalResults}`);
+    log.log(
       `[butter churn] avg results per SELECT: ${(totalResults / Math.max(1, selects)).toFixed(2)}`
     );
   });

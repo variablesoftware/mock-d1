@@ -10,7 +10,7 @@ import { mockD1Database } from "../src/mockD1Database";
 import { randomSnake, randomData } from "./helpers";
 import { describe, expect, test } from "vitest";
 
-process.env.LOG = 'none' || process.env.LOG;
+// process.env.LOG = 'none' || process.env.LOG;
 
 describe("mockD1Database", () => {
   test("should return injected session data when stubbed after creation", async () => {
