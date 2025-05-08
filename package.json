@@ -31,12 +31,12 @@
     "**/*.{ts,js,mjs,cts}": "eslint --fix"
   },
   "scripts": {
-    "build": "tsc && yarn minify; ls -lah dist",
+    "build": "yarn rollup -c && yarn minify; ls -lah dist",
     "prepare": "yarn husky install",
-    "watch:build": "tsc --watch",
+    "watch:build": "yarn rollup -c --watch",
     "build:release": "yarn build",
     "minify:options": "yarn terser --timings --compress --mangle --toplevel --source-map includeSources ",
-    "minify": "yarn minify:options dist/index.js dist/mockD1Database.js dist/lib/random.js --output dist/index.min.js",
+    "minify": "yarn minify:options dist/*.js --output dist/index.min.js",
     "prebuild": "yarn clean",
     "prepublishOnly": "yarn test:build",
     "clean": "rm -rf dist",
@@ -68,6 +68,9 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250508.0",
     "@eslint/js": "^9.26.0",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.2",
     "@types/node": "^22.15.16",
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
@@ -75,12 +78,15 @@
     "eslint-config-prettier": "^10.1.3",
     "husky": "^9.1.7",
     "prettier": "^3.5.3",
+    "rollup": "^4.40.2",
+    "rollup-plugin-typescript2": "^0.36.0",
     "terser": "^5.39.0",
+    "tslib": "^2.8.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   },
   "packageManager": "yarn@4.9.1",
   "dependencies": {
-    "@variablesoftware/logface": "^0.1.12"
+    "@variablesoftware/logface": "^0.1.14"
   }
 }
