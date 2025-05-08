@@ -35,40 +35,78 @@
  *   - ORDER BY, LIMIT
  */
 
-// Remove: // @ts-nocheck
-
 import { log } from "@variablesoftware/logface";
-import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
 import { createPreparedStatement } from "./engine/mockD1PreparedStatement";
+import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
 
+/**
+ * Creates a new mock D1 database instance.
+ *
+ * @returns An object implementing the mock D1Database interface, including:
+ *  - prepare(sql): prepares a statement for execution
+ *  - batch(statements): executes multiple statements in parallel
+ *  - dump(): returns a snapshot of the current database state
+ *  - inject(table, rows): preloads data into a table
+ *  - withSession(): returns a session-scoped interface
+ */
 export function mockD1Database(): unknown {
-  const logger = log.withTag("mockD1");
+  const logger = log.withTag(`mockD1:${Math.random().toString(36).slice(2, 7)}`);
   const db = new Map<string, { rows: D1Row[] }>();
+  //logger.debug("initialized");
 
-  function dbStats(){
-    logger.debug("initialized");
-  logger.debug("db size", db.size);
-   }
-  
-  dbStats();
+  /**
+   * Logs basic database stats for debugging.
+   */
+  //function dbStats() {
+  //  logger.debug("db size", db.size);
+  //}
 
+  /**
+   * Prepares a SQL statement for execution.
+   * @param sql - The SQL statement string.
+   * @returns A mock prepared statement.
+   */
   function prepare(sql: string): MockD1PreparedStatement {
     return createPreparedStatement(sql, db, logger);
   }
 
   return {
+    /**
+     * Prepares a SQL statement for execution.
+     */
     prepare,
+
+    /**
+     * Executes multiple prepared statements in parallel.
+     * @param statements - Array of prepared statements.
+     * @returns Promise resolving to an array of results.
+     */
     batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]> => {
       return Promise.all(statements.map(stmt => stmt.run() as Promise<FakeD1Result<T>>));
     },
+
+    /**
+     * Returns a snapshot of the current database state.
+     * @returns An object mapping table names to their rows.
+     */
     dump(): Record<string, { rows: D1Row[] }> {
-      dbStats();
-      // Return a shallow copy of the db map as an object
+      //dbStats();
       return Object.fromEntries(db.entries());
     },
+
+    /**
+     * Preloads data into a table for testing.
+     * @param table - The table name.
+     * @param rows - The rows to inject.
+     */
     inject: (table: string, rows: D1Row[]) => {
       db.set(table, { rows: [...rows] });
     },
+
+    /**
+     * Returns a session-scoped interface for transactional-style usage.
+     * @returns An object with prepare, batch, and getBookmark methods.
+     */
     withSession: () => ({
       prepare,
       batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]> => {

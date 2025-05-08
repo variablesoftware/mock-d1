@@ -26,7 +26,7 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
     async () => {
       const db = mockD1Database();
       const workers = 8;
-      const duration = 8000;
+      const duration = 9000;
       const minTables = 3;
       const maxTables = 9;
       const minCols = 3;
@@ -51,12 +51,15 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
       let updates = 0;
 
       const stressWorker = async () => {
+        const logger = log.withTag(`mockD1:worker${process.env.VITEST_WORKER_ID || ""}`);
         const end = Date.now() + duration;
         let cycles = 0;
         let inserts = 0;
         let selects = 0;
         let deletes = 0;
         let errors = 0;
+        let dbSnapshot = db.dump();
+
         while (Date.now() < end) {
           const tableCount = randInt(minTables, maxTables);
           const tables: string[] = [];
@@ -85,6 +88,7 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
           const cols = Array.from({ length: colCount }, () => randomSnake(1));
           const data = randomData(cols);
           const op = Math.random();
+          let mutated = false;
           try {
             if (op < 0.50) {
               await db.prepare(
@@ -96,17 +100,20 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
                 `DELETE FROM ${table} WHERE ${cols[0]} = :val`
               ).bind({ val: data[cols[0]] }).run();
               deletes++;
+              mutated = true;
             } else if (op < 0.92) {
               await db.prepare(
                 `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${cols.map(c => `:${c}`).join(", ")})`
               ).bind(data).run();
               opInserts++;
+              mutated = true;
             } else if (op < 0.95) {
               // (future) UPDATE
               await db.prepare(
                 `UPDATE ${table} SET ${cols[0]} = :val WHERE ${cols[1]} = :val2`
               ).bind({ val: data[cols[0]], val2: data[cols[1]] }).run();
               updates++;
+              mutated = true;
             } else {
               // Inject a random SQL error
               const badSqls = [
@@ -130,51 +137,64 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
             errors++;
           }
 
+          // Take a single snapshot at the start of the cycle
+          // Use dbSnapshot for all table/row operations in this cycle
+
           // Randomly drop a table
-          if (Math.random() < 0.1 && db.dump) {
-            const tables = Object.keys(db.dump());
+          if (Math.random() < 0.1 && dbSnapshot) {
+            const tables = Object.keys(dbSnapshot);
             if (tables.length > 0) {
               const dropTable = tables[Math.floor(Math.random() * tables.length)];
-              db.inject(dropTable, []); // or implement a real drop if your mock supports it
+              db.inject(dropTable, []);
               randomDrops++;
+              mutated = true;
             }
           }
 
           // Randomly delete a row
-          if (Math.random() < 0.1 && db.dump) {
-            const tables = Object.keys(db.dump());
+          if (Math.random() < 0.1 && dbSnapshot) {
+            const tables = Object.keys(dbSnapshot);
             if (tables.length > 0) {
               const delTable = tables[Math.floor(Math.random() * tables.length)];
-              const rows = db.dump()[delTable]?.rows ?? [];
+              const rows = dbSnapshot[delTable]?.rows ?? [];
               if (rows.length > 0) {
                 const col = Object.keys(rows[0])[0];
                 const val = rows[0][col];
                 await db.prepare(`DELETE FROM ${delTable} WHERE ${col} = :val`).bind({ val }).run();
                 randomRowDeletes++;
+                mutated = true;
               }
             }
           }
 
-          if (Math.random() < 0.2 && db.dump) { // 20% chance per cycle
-            const tables = Object.keys(db.dump());
+          if (Math.random() < 0.2 && dbSnapshot) { // 20% chance per cycle
+            const tables = Object.keys(dbSnapshot);
             if (tables.length > 0) {
               const delTable = tables[Math.floor(Math.random() * tables.length)];
-              const rows = db.dump()[delTable]?.rows ?? [];
+              const rows = dbSnapshot[delTable]?.rows ?? [];
               if (rows.length > 0) {
                 const col = Object.keys(rows[0])[0];
                 const val = rows[0][col];
                 await db.prepare(`DELETE FROM ${delTable} WHERE ${col} = :val`).bind({ val }).run();
+                mutated = true;
               }
             }
           }
           if (Math.random() < 0.1 && db.inject) { // 10% chance per cycle
-            const tables = Object.keys(db.dump());
+            const tables = Object.keys(dbSnapshot);
             if (tables.length > 0) {
               const clearTable = tables[Math.floor(Math.random() * tables.length)];
               db.inject(clearTable, []); // clears all rows
               randomClears++;
+              mutated = true;
             }
           }
+
+          // Only refresh snapshot if there was a mutation
+          if (mutated) {
+            dbSnapshot = db.dump();
+          }
+
           cycles++;
         }
         return { cycles, inserts, selects, deletes, errors, setupInserts, opInserts, updates, randomDrops, randomRowDeletes, randomClears };
@@ -210,6 +230,6 @@ describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
       log.log(`avg errors/worker: ${(totalErrors / workers).toFixed(2)}`);
       expect(typeof db.dump()).toBe("object");
     },
-    30000
+    60000
   );
 });

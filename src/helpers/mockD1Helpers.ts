@@ -3,6 +3,12 @@
  * @description Utility functions for mockD1Database.
  */
 
+/**
+ * Checks if the provided SQL string is supported by the mockD1Database engine.
+ *
+ * @param sql - The SQL statement string to check.
+ * @returns True if the SQL is supported, false otherwise.
+ */
 export function isSupportedSQL(sql: string): boolean {
   const unsupported = [
     /\blike\b/i,
@@ -10,7 +16,15 @@ export function isSupportedSQL(sql: string): boolean {
     /\bjoin\b/i,
     /\bselect\s+.+\s+from.+\(.+\)/i,
   ];
-  return !unsupported.some((regex) => regex.test(sql));
+  // Only allow valid patterns for supported statements
+  const valid =
+    /^create table(?: if not exists)? [a-zA-Z0-9_]+/i.test(sql) ||
+    /^insert into [a-zA-Z0-9_]+/i.test(sql) ||
+    /^select \* from [a-zA-Z0-9_]+/i.test(sql) ||
+    /^delete from [a-zA-Z0-9_]+/i.test(sql) ||
+    /^update [a-zA-Z0-9_]+ set /i.test(sql);
+
+  return valid && !unsupported.some((regex) => regex.test(sql));
 }
 
 // Add more helpers as needed...
