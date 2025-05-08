@@ -16,13 +16,18 @@ export function isSupportedSQL(sql: string): boolean {
     /\bjoin\b/i,
     /\bselect\s+.+\s+from.+\(.+\)/i,
   ];
-  // Only allow valid patterns for supported statements
+  // Allow valid patterns for supported statements
   const valid =
     /^create table(?: if not exists)? [a-zA-Z0-9_]+/i.test(sql) ||
     /^insert into [a-zA-Z0-9_]+/i.test(sql) ||
     /^select \* from [a-zA-Z0-9_]+/i.test(sql) ||
+    /^select count\(\*\) from [a-zA-Z0-9_]+/i.test(sql) ||
+    /^select [\w,\s]+ from [a-zA-Z0-9_]+/i.test(sql) ||
     /^delete from [a-zA-Z0-9_]+/i.test(sql) ||
-    /^update [a-zA-Z0-9_]+ set /i.test(sql);
+    /^update [a-zA-Z0-9_]+ set /i.test(sql) ||
+    /^drop table [a-zA-Z0-9_]+/i.test(sql) ||
+    /^truncate table [a-zA-Z0-9_]+/i.test(sql) ||
+    /^alter table [a-zA-Z0-9_]+ add column [a-zA-Z0-9_]+/i.test(sql);
 
   return valid && !unsupported.some((regex) => regex.test(sql));
 }

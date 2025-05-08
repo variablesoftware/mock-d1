@@ -13,6 +13,9 @@ import { matchesWhere } from "./whereMatcher";
 import { handleDelete } from "./statementHandlers/handleDelete";
 import { handleCreateTable } from "./statementHandlers/handleCreateTable";
 import { isSupportedSQL } from "../helpers/mockD1Helpers";
+import { handleDropTable } from "./statementHandlers/handleDropTable";
+import { handleTruncateTable } from "./statementHandlers/handleTruncateTable";
+import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn";
 
 /**
  * Creates a mock prepared statement for the given SQL and database state.
@@ -66,6 +69,16 @@ export function createPreparedStatement(
       return handleSelect(sql, db, bindArgs, matchesWhere, mode === "first" ? "first" : "all");
     }
 
+    // SELECT COUNT(*) FROM
+    if (/^select count\(\*\) from/i.test(sql)) {
+      return handleSelect(sql, db, bindArgs, matchesWhere, mode);
+    }
+
+    // SELECT <columns> FROM <table>
+    if (/^select [\w,\s]+ from [a-zA-Z0-9_]+/i.test(sql)) {
+      return handleSelect(sql, db, bindArgs, matchesWhere, mode);
+    }
+
     // DELETE FROM
     if (/^delete from/i.test(sql)) {
       return handleDelete(sql, db, bindArgs);
@@ -74,6 +87,21 @@ export function createPreparedStatement(
     // UPDATE <table> SET <col> = :val WHERE <col2> = :val2
     if (/^update [a-zA-Z0-9_]+ set /i.test(sql)) {
       return handleUpdate(sql, db, bindArgs);
+    }
+
+    // DROP TABLE
+    if (/^drop table/i.test(sql)) {
+      return handleDropTable(sql, db);
+    }
+
+    // TRUNCATE TABLE
+    if (/^truncate table/i.test(sql)) {
+      return handleTruncateTable(sql, db);
+    }
+
+    // ALTER TABLE ADD COLUMN
+    if (/^alter table [a-zA-Z0-9_]+ add column/i.test(sql)) {
+      return handleAlterTableAddColumn(sql, db);
     }
 
     // Default: throw for unsupported SQL

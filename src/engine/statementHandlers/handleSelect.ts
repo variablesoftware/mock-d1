@@ -19,6 +19,41 @@ export function handleSelect(
   matchesWhere: (_row: D1Row, _cond: string) => boolean,
   mode: "all" | "first"
 ) {
+  if (/^select count\(\*\) from/i.test(sql)) {
+    const tableMatch = sql.match(/from ([a-zA-Z0-9_]+)/i);
+    if (!tableMatch) throw new Error("Malformed SELECT COUNT(*) statement.");
+    const table = tableMatch[1];
+    const rows = db.get(table)?.rows ?? [];
+    return {
+      success: true,
+      results: [{ "COUNT(*)": rows.length }],
+      meta: {
+        duration: 0, size_after: 0, rows_read: rows.length, rows_written: 0,
+        last_row_id: 0, changed_db: false, changes: 0,
+      },
+    };
+  }
+
+  const selectColsMatch = sql.match(/^select ([\w,\s]+) from ([a-zA-Z0-9_]+)/i);
+  if (selectColsMatch && !/^\*/.test(selectColsMatch[1])) {
+    const cols = selectColsMatch[1].split(",").map(s => s.trim());
+    const table = selectColsMatch[2];
+    const rows = db.get(table)?.rows ?? [];
+    const results = rows.map(row => {
+      const obj: Record<string, unknown> = {};
+      for (const col of cols) obj[col] = row[col];
+      return obj;
+    });
+    return {
+      success: true,
+      results,
+      meta: {
+        duration: 0, size_after: 0, rows_read: results.length, rows_written: 0,
+        last_row_id: 0, changed_db: false, changes: 0,
+      },
+    };
+  }
+
   const tableMatch = sql.match(/from ([a-zA-Z0-9_]+)/i);
   if (!tableMatch) throw new Error("Malformed SELECT statement.");
   const table = tableMatch[1];
