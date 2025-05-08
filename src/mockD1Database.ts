@@ -38,6 +38,9 @@
 import { log } from "@variablesoftware/logface";
 import { createPreparedStatement } from "./engine/mockD1PreparedStatement";
 import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
+import type { Logger } from "@variablesoftware/logface"; // adjust path as needed
+
+const logger: Logger = log.withTag(`mockD1:${Math.random().toString(36).slice(2, 7)}`);
 
 /**
  * Creates a new mock D1 database instance.
@@ -50,7 +53,6 @@ import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Data
  *  - withSession(): returns a session-scoped interface
  */
 export function mockD1Database(): unknown {
-  const logger = log.withTag(`mockD1:${Math.random().toString(36).slice(2, 7)}`);
   const db = new Map<string, { rows: D1Row[] }>();
   //logger.debug("initialized");
 

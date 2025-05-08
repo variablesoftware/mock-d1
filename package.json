@@ -18,7 +18,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE.txt"
   ],
   "exports": {
     "dist": {
@@ -87,6 +89,6 @@
   },
   "packageManager": "yarn@4.9.1",
   "dependencies": {
-    "@variablesoftware/logface": "^0.1.14"
+    "@variablesoftware/logface": "^0.1.15"
   }
 }
