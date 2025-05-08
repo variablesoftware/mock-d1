@@ -5,10 +5,10 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@cloudflare/workers-types@npm:^4.20250506.0":
-  version: 4.20250507.0
-  resolution: "@cloudflare/workers-types@npm:4.20250507.0"
-  checksum: 10c0/be4effab193a97f6c41749fd1c34a9430becdc8d7474acfaa4c5ceb904560ab7ffab09e15c5e94d038b24fe94f8f722786a97b023909a7ffda40a87069716c35
+"@cloudflare/workers-types@npm:^4.20250508.0":
+  version: 4.20250508.0
+  resolution: "@cloudflare/workers-types@npm:4.20250508.0"
+  checksum: 10c0/53382dc970e4c5150f445926cf6e170bdb606fe270d71681845f61c74c69aa2de638e70301fb03a4648e1155cfd2abec8be06cbf9b0cfb053d77fa149234bd20
   languageName: node
   linkType: hard
 
@@ -614,12 +614,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.15.14":
-  version: 22.15.15
-  resolution: "@types/node@npm:22.15.15"
+"@types/node@npm:^22.15.16":
+  version: 22.15.16
+  resolution: "@types/node@npm:22.15.16"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/3b0c12531c9057ddcbe1cdd869ca6c2f3ea753f1cb3de0a482ca70c3d86f0dbb1d28339aecd8a0c133febda4f4355c012ed9be6ab866297fc23db360fa218dde
+  checksum: 10c0/2bdcca01306fcf991d9255e329425747bdd3b62c7ba9e7d4021969d46f3c9984a4ad2c27ababb4f3b05d49a9e05fc0a8bfce8b452c9b43995e10aca6f66b33bc
   languageName: node
   linkType: hard
 
@@ -735,10 +735,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@variablesoftware/logface@npm:0.1.8":
-  version: 0.1.8
-  resolution: "@variablesoftware/logface@npm:0.1.8"
-  checksum: 10c0/afe1d80d966f9e5880c5b446608737036d37eb7d09a7c2cee6508a6828ac354cd56eeca34a12c06c681ca4512cd5b39689fd52d9a92e4f725ab6007546cbf4de
+"@variablesoftware/logface@npm:^0.1.12":
+  version: 0.1.12
+  resolution: "@variablesoftware/logface@npm:0.1.12"
+  checksum: 10c0/57ddd3b0ffe247eb3d1874a74dda161487655312909c9bf090ece18ba4fb602b99e9d5427e92969c2f11a62be11900c831cf9d904e1cbbd55db54c2c7c48f321
   languageName: node
   linkType: hard
 
@@ -746,14 +746,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@variablesoftware/mock-d1@workspace:."
   dependencies:
-    "@cloudflare/workers-types": "npm:^4.20250506.0"
+    "@cloudflare/workers-types": "npm:^4.20250508.0"
     "@eslint/js": "npm:^9.26.0"
-    "@types/node": "npm:^22.15.14"
+    "@types/node": "npm:^22.15.16"
     "@typescript-eslint/eslint-plugin": "npm:^8.32.0"
     "@typescript-eslint/parser": "npm:^8.32.0"
-    "@variablesoftware/logface": "npm:0.1.8"
+    "@variablesoftware/logface": "npm:^0.1.12"
     eslint: "npm:^9.26.0"
-    eslint-config-prettier: "npm:^10.1.2"
+    eslint-config-prettier: "npm:^10.1.3"
     husky: "npm:^9.1.7"
     prettier: "npm:^3.5.3"
     terser: "npm:^5.39.0"
@@ -1411,7 +1411,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^10.1.2":
+"eslint-config-prettier@npm:^10.1.3":
   version: 10.1.3
   resolution: "eslint-config-prettier@npm:10.1.3"
   peerDependencies:
