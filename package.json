@@ -60,7 +60,8 @@
     ":minor": "yarn version minor",
     ":major": "yarn version major",
     "release": "yarn clean && yarn build:release && git push && git push --tags && yarn npm publish --access public",
-    "release:dry": "yarn clean && yarn build:release && npm pack --dry-run"
+    "release:dry": "yarn clean && yarn build:release && npm pack --dry-run",
+    "smoke-test": "node tests/smoke.test.js"
   },
   "repository": {
     "type": "git",
