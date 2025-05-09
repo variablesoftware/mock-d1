@@ -92,7 +92,7 @@ flags:
 # Default stack and libraries assumed unless overridden per project
 environment_defaults:
   namespace: "@variablesoftware"
-  test_framework: "Vitest + Miniflare"
+  test_framework: "Vitest + Mocks + Miniflare"
   http_framework: "Hono"
   bindings: ["KV", "D1", "AI", "WASM"]
   package_manager: "Yarn"

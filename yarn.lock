@@ -825,10 +825,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@variablesoftware/logface@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@variablesoftware/logface@npm:0.1.15"
-  checksum: 10c0/65012738e01a4a4a9d98dc386e658447f7239b75cb1940af845fdb05e96d16ef3d1dea1a9434d73f02afee63d11fa9dd54cfa5070f44775fee6c5af961a00bbd
+"@variablesoftware/logface@npm:^0.1.16":
+  version: 0.1.16
+  resolution: "@variablesoftware/logface@npm:0.1.16"
+  checksum: 10c0/cae7d5e1e14e55ffae24a38e588f06ba425b6d7b58d923ff6b5d9d5608155d72b6d61fc5b43828a6bf02bd55b6bf666fbbd499f8e55e17e570e4614e16f2fc93
   languageName: node
   linkType: hard
 
@@ -844,7 +844,7 @@ __metadata:
     "@types/node": "npm:^22.15.17"
     "@typescript-eslint/eslint-plugin": "npm:^8.32.0"
     "@typescript-eslint/parser": "npm:^8.32.0"
-    "@variablesoftware/logface": "npm:^0.1.15"
+    "@variablesoftware/logface": "npm:^0.1.16"
     eslint: "npm:^9.26.0"
     eslint-config-prettier: "npm:^10.1.3"
     husky: "npm:^9.1.7"
