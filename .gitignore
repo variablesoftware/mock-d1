@@ -4,6 +4,9 @@
 
 # junk text, find a better name OK?
 docs/text*.txt
+-*
+*.*-
+*.swp
 
 # Yarn PnP loader files (Yarn 2+)
 .pnp.*
