@@ -22,7 +22,7 @@
     "email": "bunkcode@variablesoftware.com",
     "url": "https://github.com/variablesoftware"
   },
-  "main": "dist/index.js",
+  "main": "dist/index.min.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
