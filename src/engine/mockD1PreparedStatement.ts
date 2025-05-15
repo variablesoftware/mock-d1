@@ -16,6 +16,15 @@ import { handleTruncateTable } from "./statementHandlers/handleTruncateTable";
 import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn";
 import { log } from "@variablesoftware/logface";
 
+interface Logger {
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  log: (...args: unknown[]) => void;
+  options?: (options: Record<string, unknown>) => Logger;
+}
+
 /**
  * Creates a mock prepared statement for the given SQL and database state.
  *
@@ -28,7 +37,7 @@ import { log } from "@variablesoftware/logface";
 export function createPreparedStatement(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
-  _logger: ReturnType<typeof log> | undefined // Use logface logger type
+  _logger: Logger | undefined
 ): MockD1PreparedStatement {
   // Throw on unsupported SQL at prepare-time
   if (

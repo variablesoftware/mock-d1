@@ -33,10 +33,10 @@
     "**/*.{ts,js,mjs,cts}": "eslint --fix"
   },
   "scripts": {
-    "build": "yarn rollup -c && yarn minify; ls -lah dist",
+    "build": "yarn rollup -c rollup.config.js",
     "prepare": "yarn husky install",
     "watch:build": "yarn rollup -c --watch",
-    "build:release": "yarn build",
+    "build:release": "yarn build; ls -lah dist",
     "minify:options": "yarn terser --timings --compress --mangle --toplevel --source-map includeSources ",
     "minify": "yarn minify:options dist/*.js --output dist/index.min.js",
     "prebuild": "yarn clean",
@@ -89,6 +89,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.5.3",
     "rollup": "^4.40.2",
+    "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.36.0",
     "semantic-release": "^24.2.3",
     "terser": "^5.39.1",
