@@ -1,6 +1,6 @@
 {
   "name": "@variablesoftware/mock-d1",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
   "keywords": [
     "cloudflare",
@@ -22,7 +22,7 @@
     "email": "bunkcode@variablesoftware.com",
     "url": "https://github.com/variablesoftware"
   },
-  "main": "dist/index.min.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
