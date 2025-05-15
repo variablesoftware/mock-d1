@@ -84,7 +84,7 @@ yarn test
 Once stable, it will be published as:
 
 ```json
-"@variablesoftware/mock-d1": "^0.1.0"
+"@variablesoftware/mock-d1": "^0.5.0"
 ```
 
 ---
