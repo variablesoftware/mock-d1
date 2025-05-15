@@ -16,7 +16,7 @@ export function handleSelect(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
   bindArgs: Record<string, unknown>,
-  matchesWhere: (_row: D1Row, _cond: string) => boolean,
+  matchesWhere: (_row: D1Row, _cond: string, _bindArgs?: Record<string, unknown>) => boolean,
   mode: "all" | "first"
 ) {
   if (/^select count\(\*\) from/i.test(sql)) {

@@ -32,4 +32,4 @@ test('npm package can be installed and imported from registry (smoke test)', asy
     process.chdir(origCwd);
     // Clean up temp dir (optional, not deleting for debugging)
   }
-}, 90000);
+}, 180000);

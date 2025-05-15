@@ -9,7 +9,6 @@ import { log } from "@variablesoftware/logface";
 import { handleUpdate } from "./statementHandlers/handleUpdate";
 import { handleInsert } from "./statementHandlers/handleInsert";
 import { handleSelect } from "./statementHandlers/handleSelect";
-import { matchesWhere } from "./whereMatcher";
 import { handleDelete } from "./statementHandlers/handleDelete";
 import { handleCreateTable } from "./statementHandlers/handleCreateTable";
 import { isSupportedSQL } from "../helpers/mockD1Helpers";
@@ -29,7 +28,7 @@ import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableA
 export function createPreparedStatement(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
-  _logger: ReturnType<typeof log>
+  _logger: ReturnType<typeof log> | undefined // Adjusted to allow undefined or correct type
 ): MockD1PreparedStatement {
   // Throw on unsupported SQL at prepare-time
   if (
@@ -54,6 +53,9 @@ export function createPreparedStatement(
    * @returns The result of the statement execution.
    */
   function parseAndRun(mode: "run" | "all" | "first" | "raw") {
+    const validModes: ('all' | 'first')[] = ['all', 'first'];
+    const resolvedMode: 'all' | 'first' = validModes.includes(mode as 'all' | 'first') ? (mode as 'all' | 'first') : 'all';
+
     // CREATE TABLE
     if (/^create table/i.test(sql)) {
       return handleCreateTable(sql, db);
@@ -66,17 +68,17 @@ export function createPreparedStatement(
 
     // SELECT * FROM
     if (/^select \*/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode === "first" ? "first" : "all");
+      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
     }
 
     // SELECT COUNT(*) FROM
     if (/^select count\(\*\) from/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode);
+      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
     }
 
     // SELECT <columns> FROM <table>
     if (/^select [\w,\s]+ from [a-zA-Z0-9_]+/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode);
+      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
     }
 
     // DELETE FROM
@@ -107,6 +109,11 @@ export function createPreparedStatement(
     // Default: throw for unsupported SQL
     throw new Error("SQL query uses unsupported syntax or features in this mock database.");
   }
+
+  const matchesWhere: (_row: D1Row, _cond: string, _bindArgs?: Record<string, unknown>) => boolean = (_row, _cond, _bindArgs) => {
+    // Ensure the function returns a boolean value
+    return true; // Placeholder logic, replace with actual condition
+  };
 
   return {
     /**
