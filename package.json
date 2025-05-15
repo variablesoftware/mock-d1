@@ -1,13 +1,20 @@
 {
   "name": "@variablesoftware/mock-d1",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
   "keywords": [
     "cloudflare",
+    "workers",
+    "serverless",
+    "storage",
     "d1",
+    "database",
+    "emulator",
     "mock",
     "test",
     "miniflare",
+    "sqlite",
+    "testing",
     "typescript"
   ],
   "author": {
