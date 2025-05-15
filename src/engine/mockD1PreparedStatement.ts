@@ -5,7 +5,6 @@
  */
 
 import { D1Row, MockD1PreparedStatement } from "../types/MockD1Database";
-import { log } from "@variablesoftware/logface";
 import { handleUpdate } from "./statementHandlers/handleUpdate";
 import { handleInsert } from "./statementHandlers/handleInsert";
 import { handleSelect } from "./statementHandlers/handleSelect";
@@ -15,6 +14,7 @@ import { isSupportedSQL } from "../helpers/mockD1Helpers";
 import { handleDropTable } from "./statementHandlers/handleDropTable";
 import { handleTruncateTable } from "./statementHandlers/handleTruncateTable";
 import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn";
+import { log } from "@variablesoftware/logface";
 
 /**
  * Creates a mock prepared statement for the given SQL and database state.
@@ -28,7 +28,7 @@ import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableA
 export function createPreparedStatement(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
-  _logger: ReturnType<typeof log> | undefined // Adjusted to allow undefined or correct type
+  _logger: ReturnType<typeof log> | undefined // Use logface logger type
 ): MockD1PreparedStatement {
   // Throw on unsupported SQL at prepare-time
   if (
@@ -111,8 +111,23 @@ export function createPreparedStatement(
   }
 
   const matchesWhere: (_row: D1Row, _cond: string, _bindArgs?: Record<string, unknown>) => boolean = (_row, _cond, _bindArgs) => {
-    // Ensure the function returns a boolean value
-    return true; // Placeholder logic, replace with actual condition
+    if (!_bindArgs || !_cond) return false;
+
+    // Split on OR first (lowest precedence)
+    const orGroups = _cond.split(/\s+OR\s+/i);
+    for (const group of orGroups) {
+      // Each group: split on AND (higher precedence)
+      const andConds = group.split(/\s+AND\s+/i);
+      const andResult = andConds.every(cond => {
+        // Support only equality: key = :bind
+        const m = cond.match(/([\w.]+)\s*=\s*:(\w+)/);
+        if (!m) return false;
+        const [, key, bind] = m;
+        return _row[key] === _bindArgs[bind];
+      });
+      if (andResult) return true; // If any OR group is true, return true
+    }
+    return false; // None matched
   };
 
   return {
