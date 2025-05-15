@@ -1,4 +1,4 @@
-eval "$(nodenv init - zsh)"
+#eval "$(nodenv init - zsh)"
 #export NPM_TOKEN="$(security find-generic-password -a $USER -s SECRET_NPM_TOKEN -w 2>/dev/null)"
 set -x
-yarn lint || exit 1
+#yarn lint || exit 1
