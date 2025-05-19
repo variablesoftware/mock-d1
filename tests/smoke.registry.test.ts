@@ -23,6 +23,14 @@ test('npm package can be installed and imported from registry (smoke test)', asy
     const pkgJson = require(path.join(tmpDir, 'node_modules', '@variablesoftware', 'mock-d1', 'package.json'));
     const entry = pkgJson.main || 'index.js';
     const entryPath = path.join(tmpDir, 'node_modules', '@variablesoftware', 'mock-d1', entry);
+    // Debug: List files in the installed package directory
+    const pkgDir = path.join(tmpDir, 'node_modules', '@variablesoftware', 'mock-d1');
+    console.log('DEBUG: Contents of package dir:', fs.readdirSync(pkgDir));
+    if (fs.existsSync(path.join(pkgDir, 'dist'))) {
+      console.log('DEBUG: Contents of dist:', fs.readdirSync(path.join(pkgDir, 'dist')));
+    } else {
+      console.log('DEBUG: dist directory does not exist');
+    }
     await import(entryPath);
     console.log('Smoke test passed: package can be installed and imported from registry.');
   } catch (e) {

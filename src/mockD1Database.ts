@@ -36,7 +36,7 @@
  */
 
 import { log } from "@variablesoftware/logface";
-import { createPreparedStatement } from "./engine/mockD1PreparedStatement";
+import { createPreparedStatement } from "./engine/mockD1PreparedStatement.js";
 import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
 import type { Logger } from "@variablesoftware/logface"; // adjust path as needed
 

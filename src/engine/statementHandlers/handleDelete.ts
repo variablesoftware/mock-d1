@@ -1,5 +1,5 @@
 import { D1Row } from "../../types/MockD1Database";
-import { matchesWhere } from "../whereMatcher";
+import { matchesWhere } from "../whereMatcher.js";
 
 /**
  * Handles DELETE FROM <table> [WHERE ...] statements for the mock D1 engine.

@@ -5,15 +5,15 @@
  */
 
 import { D1Row, MockD1PreparedStatement } from "../types/MockD1Database";
-import { handleUpdate } from "./statementHandlers/handleUpdate";
-import { handleInsert } from "./statementHandlers/handleInsert";
-import { handleSelect } from "./statementHandlers/handleSelect";
-import { handleDelete } from "./statementHandlers/handleDelete";
-import { handleCreateTable } from "./statementHandlers/handleCreateTable";
-import { isSupportedSQL } from "../helpers/mockD1Helpers";
-import { handleDropTable } from "./statementHandlers/handleDropTable";
-import { handleTruncateTable } from "./statementHandlers/handleTruncateTable";
-import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn";
+import { handleUpdate } from "./statementHandlers/handleUpdate.js";
+import { handleInsert } from "./statementHandlers/handleInsert.js";
+import { handleSelect } from "./statementHandlers/handleSelect.js";
+import { handleDelete } from "./statementHandlers/handleDelete.js";
+import { handleCreateTable } from "./statementHandlers/handleCreateTable.js";
+import { isSupportedSQL } from "../helpers/mockD1Helpers.js";
+import { handleDropTable } from "./statementHandlers/handleDropTable.js";
+import { handleTruncateTable } from "./statementHandlers/handleTruncateTable.js";
+import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn.js";
 import { log } from "@variablesoftware/logface";
 
 interface Logger {
