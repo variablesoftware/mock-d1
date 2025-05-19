@@ -23,10 +23,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cloudflare/workers-types@npm:^4.20250515.0":
-  version: 4.20250515.0
-  resolution: "@cloudflare/workers-types@npm:4.20250515.0"
-  checksum: 10c0/a1f020a7822fb461b1007c76a54a38e0970cb9e72e92797bbd47901841eff768f571c07b5835ab6fb1ce9955d96bc745d0aef5fc67478e39d785bf9f5a87d2f8
+"@cloudflare/workers-types@npm:^4.20250519.0":
+  version: 4.20250519.0
+  resolution: "@cloudflare/workers-types@npm:4.20250519.0"
+  checksum: 10c0/3da7cadf57a31c0a56300d4c4ca6ec9eb137eead9d1fba2f629eae88115acc0a6ec93b7b481afe422147327e67ddf0ffbc0aa95e6dbfd6563c8277d0851aeb18
   languageName: node
   linkType: hard
 
@@ -1437,7 +1437,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@variablesoftware/mock-d1@workspace:."
   dependencies:
-    "@cloudflare/workers-types": "npm:^4.20250515.0"
+    "@cloudflare/workers-types": "npm:^4.20250519.0"
     "@eslint/js": "npm:^9.26.0"
     "@rollup/plugin-commonjs": "npm:^28.0.3"
     "@rollup/plugin-node-resolve": "npm:^16.0.1"

@@ -77,7 +77,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250515.0",
+    "@cloudflare/workers-types": "^4.20250519.0",
     "@eslint/js": "^9.26.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
