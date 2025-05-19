@@ -70,7 +70,7 @@
     "release2": "yarn clean && yarn build:release && git push && git push --tags && yarn npm publish --access public",
     "release2:dry": "yarn clean && yarn build:release && npm pack --dry-run",
     "smoke-test": "node tests/smoke.test.js",
-    "pack:smoke": "yarn build && npm pack --dry-run | tee /tmp/pack.log && tar -tf *.tgz | grep dist/index.js && echo '✅ dist/index.js found in tarball' || (echo '❌ dist/index.js missing from tarball' && exit 1)",
+    "pack:smoke": "yarn build && TARBALL=$(npm pack | tail -1) && tar -tf \"$TARBALL\" | grep dist/index.js && echo '✅ dist/index.js found in tarball' && rm \"$TARBALL\" || (echo '❌ dist/index.js missing from tarball' && rm -f \"$TARBALL\" && exit 1)",
     "pack:smoke:all": "yarn build && npm pack --dry-run | tee /tmp/pack.log && tar -tf *.tgz | grep dist/ && echo '✅ dist/ contents listed above'"
   },
   "repository": {
