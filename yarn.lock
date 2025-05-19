@@ -1198,9 +1198,9 @@ __metadata:
   linkType: hard
 
 "@sigstore/protobuf-specs@npm:^0.4.0, @sigstore/protobuf-specs@npm:^0.4.1":
-  version: 0.4.1
-  resolution: "@sigstore/protobuf-specs@npm:0.4.1"
-  checksum: 10c0/8de75bc84f307b7d7bf4fa265f89a8bfa717d96e091be29ee9be1ffd6036b81355a349955e5036b86570d37f2b30b18a68a43f5e40bd958bd4128aa6bb39a3f3
+  version: 0.4.2
+  resolution: "@sigstore/protobuf-specs@npm:0.4.2"
+  checksum: 10c0/f1a0ec082064e7ccb04aaef1e2911f185529b8c92c7b3b6c2e877f45197d43808d7888b4495d8b50bc483d0b9bf320ce7b560ac9f0dfb10284a3de24c3a64e3b
   languageName: node
   linkType: hard
 
