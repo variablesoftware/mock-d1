@@ -26,59 +26,130 @@ export function matchesWhere(
     log.debug("evalExpr", { expr, row, normRow, bindArgs, normBindArgs });
     // Support quoted identifiers and SQL keywords as column names
     // If quoted, allow spaces; if unquoted, do not allow spaces
-    const m = expr.match(/([`"\[])?([a-zA-Z0-9_$ ]+)\1?\s*=\s*:(\w+)/);
-    if (!m) {
-      log.debug("evalExpr: no match", { expr });
-      return false;
+    if (!expr || expr.match(/^(AND|OR)$/i)) {
+      throw new Error("Malformed WHERE clause: empty or incomplete expression: '" + expr + "'");
     }
-    const [ , quote, colRaw, bind ] = m;
-    const col = colRaw.trim();
-    const normBind = bind.toLowerCase();
-    let rowVal;
-    if (quote) {
-      // Quoted: match exact key (case-sensitive)
-      rowVal = row[col];
-      if (typeof rowVal === 'undefined') {
-        // Fallback to lowercased key if not found
+    // Support: col = :bind, col = <literal>, col IS NULL, col IS NOT NULL
+    // 1. col = :bind
+    let m = expr.match(/([`"[])?([a-zA-Z0-9_$ ]+)\1?\s*=\s*:(\w+)/);
+    if (m) {
+      const [, quote, colRaw, bind] = m;
+      const col = colRaw.trim();
+      const normBind = bind.toLowerCase();
+      let rowVal;
+      if (quote) {
+        rowVal = row[col];
+        if (typeof rowVal === 'undefined') rowVal = normRow[col.toLowerCase()];
+      } else {
         rowVal = normRow[col.toLowerCase()];
-      }
-    } else {
-      // Unquoted: match lowercased key (case-insensitive)
-      rowVal = normRow[col.toLowerCase()];
-      if (typeof rowVal === 'undefined' && col in row) rowVal = row[col];
-      if (typeof rowVal === 'undefined') {
-        for (const [k, v] of Object.entries(row)) {
-          if (k.toLowerCase() === col.toLowerCase()) {
-            rowVal = v;
-            break;
+        if (typeof rowVal === 'undefined' && col in row) rowVal = row[col];
+        if (typeof rowVal === 'undefined') {
+          for (const [k, v] of Object.entries(row)) {
+            if (k.toLowerCase() === col.toLowerCase()) {
+              rowVal = v;
+              break;
+            }
           }
         }
       }
+      if (!(normBind in normBindArgs)) {
+        throw new Error(`Missing bind argument: ${bind}`);
+      }
+      const bindVal = normBindArgs[normBind];
+      if (Array.isArray(bindVal) || (typeof bindVal === 'object' && bindVal !== null)) {
+        throw new Error(`Bind argument '${bind}' must not be array or object`);
+      }
+      if ((rowVal === null || typeof rowVal === 'undefined') && (bindVal === null || typeof bindVal === 'undefined')) return true;
+      return rowVal == bindVal;
     }
-    log.debug("evalExpr: keys", {
-      col, bind, normBind,
-      rowKeys: Object.keys(row),
-      normRowKeys: Object.keys(normRow),
-      bindArgKeys: Object.keys(bindArgs),
-      normBindArgKeys: Object.keys(normBindArgs),
-      normBindArgs
-    });
-    if (!(normBind in normBindArgs)) {
-      log.debug("evalExpr: missing bind arg", { bind, normBind, normBindArgs });
-      throw new Error(`Missing bind argument: ${bind}`);
+    // 2. col = <literal> (string, number, boolean, null)
+    m = expr.match(/([`"[])?([a-zA-Z0-9_$ ]+)\1?\s*=\s*(.+)/);
+    if (m) {
+      const [, quote, colRaw, litRaw] = m;
+      const col = colRaw.trim();
+      let rowVal;
+      if (quote) {
+        rowVal = row[col];
+        if (typeof rowVal === 'undefined') rowVal = normRow[col.toLowerCase()];
+      } else {
+        rowVal = normRow[col.toLowerCase()];
+        if (typeof rowVal === 'undefined' && col in row) rowVal = row[col];
+        if (typeof rowVal === 'undefined') {
+          for (const [k, v] of Object.entries(row)) {
+            if (k.toLowerCase() === col.toLowerCase()) {
+              rowVal = v;
+              break;
+            }
+          }
+        }
+      }
+      let lit: string | number | boolean | null = litRaw.trim();
+      // Parse literal: quoted string, number, boolean, null
+      if ((lit.startsWith("'") && lit.endsWith("'")) || (lit.startsWith('"') && lit.endsWith('"'))) {
+        lit = lit.slice(1, -1);
+        // SQL escaping: replace doubled single quotes with single quote
+        if (litRaw.startsWith("'")) {
+          lit = (lit as string).replace(/''/g, "'");
+        }
+      } else if (/^(true|false)$/i.test(lit)) {
+        lit = lit.toLowerCase() === 'true';
+      } else if (/^null$/i.test(lit)) {
+        lit = null;
+      } else if (!isNaN(Number(lit))) {
+        lit = Number(lit);
+      }
+      if ((rowVal === null || typeof rowVal === 'undefined') && (lit === null || typeof lit === 'undefined')) return true;
+      return rowVal == lit;
     }
-    const bindVal = normBindArgs[normBind];
-    log.debug("evalExpr: compare", { col, rowVal, bind, normBind, bindVal });
-    if ((rowVal === null || typeof rowVal === 'undefined') && (bindVal === null || typeof bindVal === 'undefined')) return true;
-    // Use loose equality for D1-like behavior (string/number comparison)
-    // eslint-disable-next-line eqeqeq
-    return rowVal == bindVal;
+    // 3. col IS NULL / col IS NOT NULL
+    m = expr.match(/([`"[])?([a-zA-Z0-9_$ ]+)\1?\s+IS(\s+NOT)?\s+NULL/i);
+    if (m) {
+      const [, quote, colRaw, not] = m;
+      const col = colRaw.trim();
+      let rowVal;
+      if (quote) {
+        rowVal = row[col];
+        if (typeof rowVal === 'undefined') rowVal = normRow[col.toLowerCase()];
+      } else {
+        rowVal = normRow[col.toLowerCase()];
+        if (typeof rowVal === 'undefined' && col in row) rowVal = row[col];
+        if (typeof rowVal === 'undefined') {
+          for (const [k, v] of Object.entries(row)) {
+            if (k.toLowerCase() === col.toLowerCase()) {
+              rowVal = v;
+              break;
+            }
+          }
+        }
+      }
+      const isNull = rowVal === null || typeof rowVal === 'undefined';
+      return not ? !isNull : isNull;
+    }
+    // If the expression is not empty but doesn't match the supported pattern, treat as unsupported (return false)
+    return false;
   }
 
   // Recursively evaluate the condition with correct operator precedence (AND binds tighter than OR)
   function evalCond(cond: string): boolean {
     cond = cond.trim();
     log.debug("evalCond: entry", { cond });
+    // Parentheses balance check
+    let paren = 0;
+    for (let i = 0; i < cond.length; i++) {
+      if (cond[i] === '(') paren++;
+      if (cond[i] === ')') paren--;
+      if (paren < 0) throw new Error("Malformed WHERE clause: unbalanced parentheses");
+    }
+    if (paren !== 0) throw new Error("Malformed WHERE clause: unbalanced parentheses");
+    // Reject empty or obviously malformed conditions
+    if (!cond || cond.match(/^(AND|OR)$/i)) {
+      throw new Error("Malformed WHERE clause: empty or incomplete condition");
+    }
+    // Additional check: if cond is only whitespace, throw
+    if (cond.length === 0) {
+      throw new Error("Malformed WHERE clause: empty or incomplete condition");
+    }
+  
     // Remove outer parenthesis if they wrap the whole condition
     while (cond.startsWith('(') && cond.endsWith(')')) {
       let depth = 0;
@@ -114,13 +185,17 @@ export function matchesWhere(
         isWordBoundary(cond, i - 1) &&
         isWordBoundary(cond, i + 2)
       ) {
-        orParts.push(cond.slice(last, i).trim());
+        const part = cond.slice(last, i).trim();
+        if (!part) throw new Error("Malformed WHERE clause: incomplete OR condition");
+        orParts.push(part);
         last = i + 2;
         i += 1;
       }
     }
     if (orParts.length) {
-      orParts.push(cond.slice(last).trim());
+      const part = cond.slice(last).trim();
+      if (!part) throw new Error("Malformed WHERE clause: incomplete OR condition");
+      orParts.push(part);
       log.debug("evalCond: OR split", { cond, orParts });
       return orParts.some(part => evalCond(part));
     }
@@ -136,13 +211,17 @@ export function matchesWhere(
         isWordBoundary(cond, i - 1) &&
         isWordBoundary(cond, i + 3)
       ) {
-        andParts.push(cond.slice(last, i).trim());
+        const part = cond.slice(last, i).trim();
+        if (!part) throw new Error("Malformed WHERE clause: incomplete AND condition");
+        andParts.push(part);
         last = i + 3;
         i += 2;
       }
     }
     if (andParts.length) {
-      andParts.push(cond.slice(last).trim());
+      const part = cond.slice(last).trim();
+      if (!part) throw new Error("Malformed WHERE clause: incomplete AND condition");
+      andParts.push(part);
       log.debug("evalCond: AND split", { cond, andParts });
       return andParts.every(part => evalCond(part));
     }

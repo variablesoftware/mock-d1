@@ -22,6 +22,19 @@ export function handleSelect(
 ) {
   const isDebug = process.env.DEBUG === '1';
   if (isDebug) log.debug("called", { sql });
+  if (isDebug) log.debug("handleSelect: checking for multiple statements", { sql });
+  // Disallow multiple statements: only allow a single trailing semicolon (if any)
+  const sqlTrimmed = sql.trim();
+  const firstSemicolon = sqlTrimmed.indexOf(";");
+  const lastSemicolon = sqlTrimmed.lastIndexOf(";");
+  if (
+    firstSemicolon !== -1 &&
+    lastSemicolon !== sqlTrimmed.length - 1 // not just a trailing semicolon
+  ) {
+    log.debug("handleSelect: multiple statements detected, throwing", { sql });
+    throw new Error("Malformed SQL: multiple statements detected");
+  }
+  if (isDebug) log.debug("handleSelect: checked for multiple statements", { sql });
   // SELECT COUNT(*) FROM ...
   if (/^select count\(\*\) from/i.test(sql)) {
     // Improved regex: support quoted identifiers, SQL keywords, and bracketed names
@@ -66,9 +79,14 @@ export function handleSelect(
     if (isDebug) log.debug("[SELECT <columns> rows", { rowsLength: filteredRows.length, canonicalCols: rows[0] ? Object.keys(rows[0]) : [] });
     // WHERE clause support for SELECT <columns>
     let filtered = filteredRows;
-    const whereMatch = sql.match(/where (.+)$/i);
+    // Updated regex to match blank/whitespace WHERE clauses
+    const whereMatch = sql.match(/where\s*(.*)$/i);
     if (whereMatch) {
       const cond = whereMatch[1];
+      if (!cond || cond.trim().length === 0) {
+        if (isDebug) log.debug("Malformed WHERE clause detected: blank or whitespace", { sql, whereMatch });
+        throw new Error("Malformed WHERE clause: empty or incomplete condition");
+      }
       const bindNames = Array.from(cond.matchAll(/:([a-zA-Z0-9_]+)/g)).map(m => m[1]);
       for (const name of bindNames) {
         if (!(name in bindArgs)) throw new Error(`Missing bind argument: ${name}`);
@@ -79,10 +97,15 @@ export function handleSelect(
       if (isDebug) {
         const matchResults = filteredRows.map((row, i) => {
           const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-          return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
+          try {
+            return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
+          } catch (err) {
+            return { i, row, normRow, error: err };
+          }
         });
         log.debug("SELECT <columns> matchesWhere results", matchResults);
       }
+      // Remove unnecessary try/catch wrapper
       filtered = filteredRows.filter(row => {
         const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
         return matchesWhere(normRow, cond, normBindArgs);
@@ -128,10 +151,15 @@ export function handleSelect(
   const filteredRows = filterSchemaRow(rows);
   if (isDebug) log.debug("SELECT * rows", { rowsLength: filteredRows.length });
   let filtered = filteredRows;
-  const whereMatch = sql.match(/where (.+)$/i);
+  // Updated regex to match blank/whitespace WHERE clauses
+  const whereMatch = sql.match(/where\s*(.*)$/i);
   if (isDebug) log.debug("SELECT * whereMatch", { whereMatch });
   if (whereMatch) {
     const cond = whereMatch[1];
+    if (!cond || cond.trim().length === 0) {
+      if (isDebug) log.debug("Malformed WHERE clause detected: blank or whitespace", { sql, whereMatch });
+      throw new Error("Malformed WHERE clause: empty or incomplete condition");
+    }
     const bindNames = Array.from(cond.matchAll(/:([a-zA-Z0-9_]+)/g)).map(m => m[1]);
     for (const name of bindNames) {
       if (!(name in bindArgs)) throw new Error(`Missing bind argument: ${name}`);
@@ -142,10 +170,15 @@ export function handleSelect(
     if (isDebug) {
       const matchResults = filteredRows.map((row, i) => {
         const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-        return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
+        try {
+          return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
+        } catch (err) {
+          return { i, row, normRow, error: err };
+        }
       });
       log.debug("SELECT * matchesWhere results", matchResults);
     }
+    // Remove unnecessary try/catch wrapper
     filtered = filteredRows.filter(row => {
       const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
       return matchesWhere(normRow, cond, normBindArgs);

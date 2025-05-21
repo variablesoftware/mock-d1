@@ -5,7 +5,7 @@
  * This suite tests the behavior of the mock database under various edge cases,
  * including malformed SQL statements, unsupported data types, and concurrency.
  */
-import { mockD1Database } from "../../src/mockD1Database";
+import { mockD1Database } from "../../../src/mockD1Database";
 import { describe, expect, test } from "vitest";
 
 /**
