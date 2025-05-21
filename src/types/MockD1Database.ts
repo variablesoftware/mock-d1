@@ -82,8 +82,8 @@ export interface MockD1PreparedStatement {
  * Represents a D1 database.
  */
 export interface D1Database {
-  prepare(sql: string): MockD1PreparedStatement;
-  batch<T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]>;
+  prepare(_sql: string): MockD1PreparedStatement;
+  batch<T = unknown>(_statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]>;
   dump(): Record<string, { rows: D1Row[] }>;
-  inject(table: string, rows: D1Row[]): void;
+  inject(_table: string, _rows: D1Row[]): void;
 }

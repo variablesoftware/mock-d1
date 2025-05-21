@@ -14,17 +14,17 @@ import { isSupportedSQL } from "../helpers/mockD1Helpers.js";
 import { handleDropTable } from "./statementHandlers/handleDropTable.js";
 import { handleTruncateTable } from "./statementHandlers/handleTruncateTable.js";
 import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn.js";
-import { log } from "@variablesoftware/logface";
-import { validateSQLSyntax } from "./sqlValidation.js";
+// log import removed (was unused)
+// validateSQLSyntax import removed (was unused)
 import { matchesWhere } from "./helpers.js";
 
 interface Logger {
-  debug: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
-  log: (...args: unknown[]) => void;
-  options?: (options: Record<string, unknown>) => Logger;
+  debug: (..._args: unknown[]) => void;
+  info: (..._args: unknown[]) => void;
+  warn: (..._args: unknown[]) => void;
+  error: (..._args: unknown[]) => void;
+  log: (..._args: unknown[]) => void;
+  options?: (_options: Record<string, unknown>) => Logger;
 }
 
 /**
@@ -157,33 +157,33 @@ export function createPreparedStatement(
   return {
     /**
      * Binds arguments to the prepared statement.
-     * @param args - The named bind arguments.
+     * @param _args - The named bind arguments.
      * @returns The prepared statement instance for chaining.
      */
-    bind(args: Record<string, unknown>) {
-      bindArgs = args;
+    bind(_args: Record<string, unknown>) {
+      bindArgs = _args;
       return this;
     },
     /**
      * Executes the statement and returns the result.
      * @returns The result of the statement execution.
      */
-    async run() { return parseAndRun("run"); },
+    async run(_args?: unknown) { return parseAndRun("run"); },
     /**
      * Executes the statement and returns all matching results.
      * @returns The result of the statement execution.
      */
-    async all() { return parseAndRun("all"); },
+    async all(_args?: unknown) { return parseAndRun("all"); },
     /**
      * Executes the statement and returns the first matching result.
      * @returns The result of the statement execution.
      */
-    async first() { return parseAndRun("first"); },
+    async first(_args?: unknown) { return parseAndRun("first"); },
     /**
      * Executes the statement and returns the raw result array.
      * @returns The array of result rows.
      */
-    async raw() {
+    async raw(_args?: unknown) {
       const result = await parseAndRun("all");
       return result.results ?? [];
     },

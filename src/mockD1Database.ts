@@ -38,7 +38,7 @@
 import { log } from "@variablesoftware/logface";
 import { createPreparedStatement } from "./engine/mockD1PreparedStatement.js";
 import { D1Row, MockD1PreparedStatement, FakeD1Result, D1Database } from "./types/MockD1Database";
-import type { Logger } from "@variablesoftware/logface"; // adjust path as needed
+// import type { Logger } from "@variablesoftware/logface"; // adjust path as needed
 
 // Remove or comment out any global log statements not needed for debug/trace
 

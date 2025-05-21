@@ -22,7 +22,7 @@ export function handleUpdate(
   if (isDebug) log.debug("handleUpdate called", { sql, bindArgs });
   // Support quoted identifiers and normalize table/column names
   // Matches: UPDATE <table> SET <col> = :val [WHERE <col2> = :val2], where <table> can be quoted or unquoted, and SQL keywords allowed
-  const tableMatch = sql.match(/^update\s+([`"\[])(.+?)\1\s+set\s+|^update\s+([\w$]+)\s+set\s+/i);
+  const tableMatch = sql.match(/^update\s+([`"[])(.+?)\1\s+set\s+|^update\s+([\w$]+)\s+set\s+/i);
   if (!tableMatch) throw new Error("Malformed UPDATE statement.");
   const table = (tableMatch[2] || tableMatch[3]).toLowerCase();
   if (isDebug) log.debug("handleUpdate normalized table name", { raw: tableMatch[1] ? tableMatch[1] + (tableMatch[2] || '') + tableMatch[1] : tableMatch[3], table });
@@ -31,8 +31,8 @@ export function handleUpdate(
   if (isDebug) log.debug("handleUpdate tableKey", { table, tableKey });
   if (!tableKey) throw new Error(`Table '${table}' does not exist in the database.`);
   // Normalize set/where columns to lower-case, support quoted identifiers and SQL keywords
-  const setMatch = sql.match(/set\s+([`"\[])(.+?)\1\s*=\s*:(\w+)|set\s+([\w$]+)\s*=\s*:(\w+)/i);
-  const whereMatch = sql.match(/where\s+([`"\[])(.+?)\1\s*=\s*:(\w+)|where\s+([\w$]+)\s*=\s*:(\w+)/i);
+  const setMatch = sql.match(/set\s+([`"[])(.+?)\1\s*=\s*:(\w+)|set\s+([\w$]+)\s*=\s*:(\w+)/i);
+  const whereMatch = sql.match(/where\s+([`"[])(.+?)\1\s*=\s*:(\w+)|where\s+([\w$]+)\s*=\s*:(\w+)/i);
 
   if (!setMatch) throw new Error("Malformed UPDATE statement.");
   const setCol: string = (setMatch[2] || setMatch[4]).toLowerCase();
@@ -94,8 +94,6 @@ export function handleUpdate(
     // No WHERE: update all data rows
     const bindKeys = Object.keys(bindArgs);
     const setBindKey = bindKeys.find(k => k.toLowerCase() === setBind.toLowerCase());
-    // Use canonical columns from schema row for column matching, normalized
-    const canonicalCols = tableObj && tableObj.rows[0] ? Object.keys(tableObj.rows[0]).map(k => k.toLowerCase()) : [];
     // --- Ensure the column exists in the schema row ---
     if (tableObj && tableObj.rows.length > 0) {
       const schemaRow = tableObj.rows[0];

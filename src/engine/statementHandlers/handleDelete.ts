@@ -22,7 +22,7 @@ export function handleDelete(
   if (isDebug) log.debug("called", { sql, bindArgs });
   // Support quoted identifiers and normalize table name to lower-case
   // Matches: DELETE FROM <table> [WHERE ...], where <table> can be quoted, unquoted, or a SQL keyword
-  const tableMatch = sql.match(/delete from\s+([`"\[])(.+?)\1|delete from\s+([\w$]+)/i);
+  const tableMatch = sql.match(/delete from\s+([`"[])(.+?)\1|delete from\s+([\w$]+)/i);
   if (!tableMatch) throw new Error("Malformed DELETE statement.");
   // Extract table name, strip quotes if present, and normalize to lower-case
   const table = (tableMatch[2] || tableMatch[3]).toLowerCase();

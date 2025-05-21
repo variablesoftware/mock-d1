@@ -60,7 +60,7 @@ export function handleInsert(
   }
 
   // Relaxed regex: allow quoted identifiers, SQL keywords, and bracketed names
-  const tableMatch = sql.match(/insert into\s+([`"\[])?([\w$]+)\1?/i);
+  const tableMatch = sql.match(/insert into\s+([`"[])?([\w$]+)\1?/i);
   const colMatch = sql.match(/\(([^)]+)\)/);
   const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
 
@@ -79,7 +79,7 @@ export function handleInsert(
     // Auto-create table with schema row using columns from insert
     log.debug("auto-creating table", { table });
     const schemaRow: Record<string, unknown> = {};
-    const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
+    const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
     for (const col of columns) schemaRow[col] = undefined;
     db.set(table, { rows: [schemaRow] });
     tableKey = table;
@@ -94,7 +94,7 @@ export function handleInsert(
   if (isDebug) log.debug("tableKey", { table, tableKey });
 
   // Normalize columns to lower-case for all lookups and assignments
-  const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
+  const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
   const values = valuesMatch[1].split(",").map(s => s.trim());
 
   if (columns.length !== values.length) {

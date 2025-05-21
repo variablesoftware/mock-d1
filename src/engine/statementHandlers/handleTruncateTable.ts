@@ -1,5 +1,5 @@
 import { D1Row } from "../../types/MockD1Database";
-import { findTableKey, filterSchemaRow } from "../helpers.js";
+import { findTableKey } from "../helpers.js";
 
 /**
  * Handles TRUNCATE TABLE <table> statements.

@@ -24,7 +24,7 @@ export function matchesWhere(
     const andConds = group.split(/\s+AND\s+/i);
     const andResult = andConds.every(cond => {
       // Support only equality: key = :bind, allow quoted/keyword columns
-      const m = cond.match(/([`"\[]?)([\w$]+)\1\s*=\s*:(\w+)/);
+      const m = cond.match(/([`"[?)([\w$]+)\1\s*=\s*:(\w+)/);
       if (!m) return false;
       const [, , key, bind] = m;
       const normKey = key.toLowerCase();

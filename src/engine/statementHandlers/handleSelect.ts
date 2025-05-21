@@ -26,7 +26,7 @@ export function handleSelect(
   // SELECT COUNT(*) FROM ...
   if (/^select count\(\*\) from/i.test(sql)) {
     // Improved regex: support quoted identifiers, SQL keywords, and bracketed names
-    const tableMatch = sql.match(/from\s+([`"\[])(.+?)\1|from\s+([\w$]+)/i);
+    const tableMatch = sql.match(/from\s+([`"[])(.+?)\1|from\s+([\w$]+)/i);
     if (isDebug) log.debug("SELECT COUNT(*) tableMatch", { tableMatch });
     const table = tableMatch ? (tableMatch[2] || tableMatch[3]).toLowerCase() : undefined;
     if (!table) throw new Error("Malformed SELECT COUNT(*) statement.");
@@ -53,11 +53,11 @@ export function handleSelect(
 
   // SELECT <columns> FROM <table>
   // Improved regex: support quoted identifiers, SQL keywords, and bracketed names
-  const selectColsMatch = sql.match(/^select ([^*]+) from\s+([`"\[])(.+?)\2|^select ([^*]+) from\s+([\w$]+)/i);
+  const selectColsMatch = sql.match(/^select ([^*]+) from\s+([`"[])(.+?)\2|^select ([^*]+) from\s+([\w$]+)/i);
   if (isDebug) log.debug("SELECT <columns> match", { selectColsMatch });
   if (selectColsMatch) {
     // Normalize columns to lower-case for all lookups
-    const cols = (selectColsMatch[1] || selectColsMatch[4]).split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
+    const cols = (selectColsMatch[1] || selectColsMatch[4]).split(",").map(s => s.trim().replace(/^[`"[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
     const table = (selectColsMatch[3] || selectColsMatch[5]).toLowerCase();
     const tableKey = findTableKey(db, table);
     if (isDebug) log.debug("SELECT <columns> tableKey", { table, tableKey });
@@ -65,8 +65,6 @@ export function handleSelect(
     const rows = db.get(tableKey)?.rows ?? [];
     const filteredRows = filterSchemaRow(rows);
     if (isDebug) log.debug("[SELECT <columns> rows", { rowsLength: filteredRows.length, canonicalCols: rows[0] ? Object.keys(rows[0]) : [] });
-    // Normalize canonical columns to lower-case
-    const canonicalCols = rows[0] ? Object.keys(rows[0]).map(k => k.toLowerCase()) : [];
     // WHERE clause support for SELECT <columns>
     let filtered = filteredRows;
     const whereMatch = sql.match(/where (.+)$/i);
@@ -118,7 +116,7 @@ export function handleSelect(
 
   // SELECT * FROM <table> [WHERE ...]
   // Improved regex: support quoted identifiers, SQL keywords, and bracketed names
-  const tableMatch = sql.match(/from\s+([`"\[])(.+?)\1|from\s+([\w$]+)/i);
+  const tableMatch = sql.match(/from\s+([`"[])(.+?)\1|from\s+([\w$]+)/i);
   if (isDebug) log.debug("SELECT * tableMatch", { tableMatch });
   const table = tableMatch ? (tableMatch[2] || tableMatch[3]).toLowerCase() : undefined;
   if (!table) throw new Error("Malformed SELECT statement.");
