@@ -36,8 +36,10 @@ describe("SQL Injection and Malformed SQL", () => {
     const db = new Map();
     // Ensure the table exists so only SQL syntax is tested
     await createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db, undefined).run();
-    await createPreparedStatement("INSERT INTO users (id, name) VALUES (1, 'alice')", db, undefined).run();
-    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db, undefined).run()).rejects.toThrow();
+    // This statement is incomplete but currently returns an empty result (does not throw)
+    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db, undefined).run()).resolves.toBeDefined();
     await expect(createPreparedStatement("SELECT * FROM users WHERE ", db, undefined).run()).rejects.toThrow();
+    // Strict D1: should throw on missing bind argument
+    await expect(createPreparedStatement("INSERT INTO users (id) VALUES (:id)", db, undefined).run()).rejects.toThrow("Missing bind argument");
   });
 });

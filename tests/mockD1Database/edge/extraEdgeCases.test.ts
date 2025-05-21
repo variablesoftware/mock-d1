@@ -19,9 +19,10 @@ describe("mockD1Database extra edge cases", () => {
   it("should treat table/column names case-insensitively", async () => {
     const db = new Map();
     await createPreparedStatement("CREATE TABLE Users (id INTEGER)", db, undefined).run();
-    await createPreparedStatement("INSERT INTO users (id) VALUES (1)", db, undefined).run();
+    // Strict D1: must use .bind({ id: 1 })
+    await createPreparedStatement("INSERT INTO users (id) VALUES (:id)", db, undefined).bind({ id: 1 }).run();
     const res = await createPreparedStatement("SELECT id FROM USERS", db, undefined).all();
-    expect(res.results[0].id).toBe(1);
+    expect((res.results[0] as { id: number }).id).toBe(1);
   });
 
   it("should throw on multiple statements in one string", () => {
@@ -32,9 +33,9 @@ describe("mockD1Database extra edge cases", () => {
   it("should allow table/column names that are SQL keywords", async () => {
     const db = new Map();
     await createPreparedStatement("CREATE TABLE select (id INTEGER)", db, undefined).run();
-    await createPreparedStatement("INSERT INTO select (id) VALUES (1)", db, undefined).run();
+    await createPreparedStatement("INSERT INTO select (id) VALUES (:id)", db, undefined).bind({ id: 1 }).run();
     const res = await createPreparedStatement("SELECT id FROM select", db, undefined).all();
-    expect(res.results[0].id).toBe(1);
+    expect((res.results[0] as { id: number }).id).toBe(1);
   });
 
   it("should throw on truncate/drop of nonexistent table", async () => {
@@ -52,10 +53,10 @@ describe("mockD1Database extra edge cases", () => {
   it("should dump state after sequence of operations", async () => {
     const db = new Map();
     await createPreparedStatement("CREATE TABLE foo (id INTEGER)", db, undefined).run();
-    await createPreparedStatement("INSERT INTO foo (id) VALUES (42)", db, undefined).run();
+    await createPreparedStatement("INSERT INTO foo (id) VALUES (:id)", db, undefined).bind({ id: 42 }).run();
     const stmt = createPreparedStatement("SELECT * FROM foo", db, undefined);
     const res = await stmt.all();
-    expect(res.results[0].id).toBe(42);
+    expect((res.results[0] as { id: number }).id).toBe(42);
   });
 
   it("should throw with correct error messages", () => {

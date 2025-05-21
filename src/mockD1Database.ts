@@ -116,10 +116,9 @@ export function mockD1Database(): D1Database {
       } else {
         // Use schema row's keys as canonical columns
         canonicalCols = Object.keys(tableRows[0]);
-        // If schema row is empty, patch it with first injected row's keys
+        // If schema row is empty, throw (strict D1: schema must exist)
         if (canonicalCols.length === 0) {
-          canonicalCols = Object.keys(rows[0]);
-          for (const col of canonicalCols) tableRows[0][col] = undefined;
+          throw new Error("Cannot inject: schema row is empty");
         }
       }
       // Insert all injected rows normalized to canonical columns
@@ -129,6 +128,11 @@ export function mockD1Database(): D1Database {
           // Find matching key in row (case-insensitive)
           const matchKey = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
           normalizedRow[col] = matchKey ? row[matchKey] : null;
+        }
+        // Strict: do not allow extra columns in injected data
+        const extraCols = Object.keys(row).filter(k => !canonicalCols.some(c => c.toLowerCase() === k.toLowerCase()));
+        if (extraCols.length > 0) {
+          throw new Error(`Injected row contains columns not present in schema: ${extraCols.join(", ")}`);
         }
         tableRows.push(normalizedRow);
       }

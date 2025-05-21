@@ -102,32 +102,18 @@ export function handleInsert(
     throw new Error("INSERT column/value count mismatch.");
   }
 
-  if (isDebug) log.debug("columns/values (normalized)", { columns, values });
-
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names
   const bindKeys = Object.keys(bindArgs);
-  // Build row using either bind values or direct literals
+  // Build row using only bind values (strict D1: do not fallback to literals)
   const row: Record<string, unknown> = {};
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
     // Find bind key case-insensitively
     const bindKey = bindKeys.find(k => k.toLowerCase() === col);
-    let value;
-    if (bindKey) {
-      value = bindArgs[bindKey];
-    } else {
-      // Try to parse as a literal (number, string, null)
-      const raw = values[i];
-      if (/^null$/i.test(raw)) {
-        value = null;
-      } else if (/^['"](.*)['"]$/.test(raw)) {
-        value = raw.replace(/^['"]|['"]$/g, "");
-      } else if (!isNaN(Number(raw))) {
-        value = Number(raw);
-      } else {
-        value = raw; // fallback: store as string
-      }
+    if (!bindKey) {
+      throw new Error(`Missing bind argument: ${col}`);
     }
+    let value = bindArgs[bindKey];
     // Only allow primitives/null/undefined, or plain objects/arrays (JSON-serializable)
     if (typeof value === 'object' && value !== null) {
       // Only allow plain objects or arrays
@@ -147,43 +133,23 @@ export function handleInsert(
   }
 
   // Get canonical columns from the first row (set by CREATE TABLE), normalize to lower-case
-  let canonicalCols = tableData.rows[0] ? Object.keys(tableData.rows[0]).map(k => k.toLowerCase()) : columns;
-  if (canonicalCols.length === 0 && columns.length > 0) {
-    for (const col of columns) {
-      tableData.rows[0][col] = undefined;
-    }
-    canonicalCols = columns;
-    if (isDebug) log.debug("patched schema row for dynamic table (normalized)", { canonicalCols, tableRows: tableData.rows });
+  const canonicalCols = tableData.rows[0] ? Object.keys(tableData.rows[0]).map(k => k.toLowerCase()) : columns;
+  // Strict: do not patch schema row with new columns
+  if (canonicalCols.length !== columns.length || !columns.every(col => canonicalCols.includes(col))) {
+    throw new Error("Attempted to insert with columns not present in schema");
   }
-
-  if (isDebug) log.debug("canonicalCols (normalized)", { canonicalCols, tableRows: tableData.rows });
 
   // Use bindKeys from earlier in the function
   const normalizedRow: Record<string, unknown> = {};
-  if (canonicalCols.length === 0) {
-    if (isDebug) log.debug("inserting into table with no columns", { tableKey });
-    if (tableData.rows.length && Object.values(tableData.rows[0]).every(v => typeof v === 'undefined')) {
-      tableData.rows.splice(1, 0, {});
-    } else {
-      tableData.rows.push({});
-    }
+  for (const canonicalCol of canonicalCols) {
+    // Use value from row (already parsed above)
+    normalizedRow[canonicalCol] = row[canonicalCol];
+  }
+  if (isDebug) log.debug("inserting normalizedRow (normalized)", { normalizedRow, tableKey });
+  if (tableData.rows.length && Object.values(tableData.rows[0]).every(v => typeof v === 'undefined')) {
+    tableData.rows.splice(1, 0, normalizedRow);
   } else {
-    for (const canonicalCol of canonicalCols) {
-      // Find matching column in the insert statement (case-insensitive, normalized)
-      const insertColIdx = columns.findIndex(c => c === canonicalCol);
-      if (insertColIdx !== -1) {
-        // Use value from row (already parsed above)
-        normalizedRow[canonicalCol] = row[canonicalCol];
-      } else {
-        normalizedRow[canonicalCol] = null;
-      }
-    }
-    if (isDebug) log.debug("inserting normalizedRow (normalized)", { normalizedRow, tableKey });
-    if (tableData.rows.length && Object.values(tableData.rows[0]).every(v => typeof v === 'undefined')) {
-      tableData.rows.splice(1, 0, normalizedRow);
-    } else {
-      tableData.rows.push(normalizedRow);
-    }
+    tableData.rows.push(normalizedRow);
   }
 
   if (isDebug) log.debug("final table rows", { tableKey, rows: tableData.rows });

@@ -8,6 +8,8 @@ describe("DML operations", () => {
 
   beforeEach(() => {
     db = mockD1Database();
+    // Ensure schema is defined for strict D1
+    db.prepare("CREATE TABLE users (id INTEGER, name TEXT)").run();
   });
 
   test("DELETE FROM <table> deletes all rows", async () => {

@@ -52,15 +52,20 @@ export function handleUpdate(
   const dataRows = tableObj ? filterSchemaRow(tableObj.rows) : [];
   if (isDebug) log.debug("handleUpdate dataRows (schema row skipped)", { dataRows });
 
+  // Strict: only allow updates to columns defined in the schema row
+  const canonicalCols = tableObj && tableObj.rows[0] ? Object.keys(tableObj.rows[0]).map(k => k.toLowerCase()) : [];
+  if (!canonicalCols.includes(setCol)) {
+    throw new Error(`Attempted to update column not present in schema: ${setCol}`);
+  }
+
   if (whereMatch && whereCol && whereBind) {
     // Accept bind arg names case-insensitively
     const bindKeys = Object.keys(bindArgs);
     const setBindKey = bindKeys.find(k => k.toLowerCase() === setBind.toLowerCase());
     const whereBindKey = bindKeys.find(k => k.toLowerCase() === whereBind!.toLowerCase());
+    if (!setBindKey) throw new Error(`Missing bind argument: ${setBind}`);
     if (!whereBindKey) throw new Error(`Missing bind argument: ${whereBind}`);
     // Use canonical columns from schema row for column matching, normalized
-    const canonicalCols = tableObj && tableObj.rows[0] ? Object.keys(tableObj.rows[0]).map(k => k.toLowerCase()) : [];
-    // Normalize row keys to lower-case for WHERE matching
     if (isDebug) {
       const matchResults = dataRows.map((row, i) => {
         const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
@@ -94,15 +99,7 @@ export function handleUpdate(
     // No WHERE: update all data rows
     const bindKeys = Object.keys(bindArgs);
     const setBindKey = bindKeys.find(k => k.toLowerCase() === setBind.toLowerCase());
-    // --- Ensure the column exists in the schema row ---
-    if (tableObj && tableObj.rows.length > 0) {
-      const schemaRow = tableObj.rows[0];
-      const schemaCols = Object.keys(schemaRow).map(k => k.toLowerCase());
-      if (!schemaCols.includes(setCol)) {
-        // Add the new column to the schema row
-        schemaRow[setCol] = undefined;
-      }
-    }
+    if (!setBindKey) throw new Error(`Missing bind argument: ${setBind}`);
     // --- Ensure the column exists in all data rows before updating ---
     for (const row of dataRows) {
       const rowKeys = Object.keys(row).map(k => k.toLowerCase());

@@ -41,7 +41,9 @@ export function handleDelete(
     const cond = whereMatch[1];
     const bindNames = Array.from(cond.matchAll(/:([a-zA-Z0-9_]+)/g)).map(m => m[1]);
     for (const name of bindNames) {
-      if (!(name in bindArgs)) throw new Error(`Missing bind argument: ${name}`);
+      if (!(Object.keys(bindArgs).some(k => k.toLowerCase() === name.toLowerCase()))) {
+        throw new Error(`Missing bind argument: ${name}`);
+      }
     }
     toDelete = dataRows.filter(row => {
       const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
