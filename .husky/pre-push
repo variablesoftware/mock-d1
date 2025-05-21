@@ -1,8 +1,13 @@
 #eval "$(nodenv init - zsh)"
 #export PATH="$(nodenv root)/shims:$PATH"
 #export NPM_TOKEN="$(security find-generic-password -a $USER -s SECRET_NPM_TOKEN -w 2>/dev/null || echo '')"
+source ~/.nvm/nvm.sh
+nvm use 22 --lts
 set -x
-#yarn lint && yarn build:test || exit 1
+corepack enable && corepack prepare yarn@4.9.1 --activate
+which yarn node git
 echo ${PWD}
 echo ${PATH}
+yarn lint || exit 1
+#yarn lint && yarn build:test || exit 1
 gitleaks dir . || exit 1
