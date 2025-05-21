@@ -22,10 +22,15 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
+        env:
+          D1_SMOKE: 1
       - run: corepack enable && corepack prepare yarn@4.9.1 --activate
+      - run: which yarn node git
       - run: yarn install --immutable
-      - run: yarn build:test
       - run: yarn lint
+      - run: yarn build
+      - run: yarn vitest
+      - run: ./scripts/smoke-local.sh
 
   # doesn't actually work, yet.
   test-bump-and-publish-test:
