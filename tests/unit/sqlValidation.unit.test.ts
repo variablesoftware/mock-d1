@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateSQLSyntax } from '../../../src/engine/sqlValidation';
+import { validateSQLSyntax } from '../../src/engine/sqlValidation';
 
 /**
  * Unit tests for validateSQLSyntax
