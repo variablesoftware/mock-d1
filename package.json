@@ -104,6 +104,6 @@
   "packageManager": "yarn@4.9.1",
   "dependencies": {
     "@variablesoftware/logface": "^0.2.5",
-    "zod": "^3.25.11"
+    "zod": "^3.25.17"
   }
 }
