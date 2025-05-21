@@ -13,7 +13,8 @@
     "types": [
       "vitest",
       "@cloudflare/workers-types",
-      "node"
+      "node",
+      "zod"
     ]
   },
   "include": [

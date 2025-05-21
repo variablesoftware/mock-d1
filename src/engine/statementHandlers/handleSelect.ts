@@ -1,6 +1,7 @@
 import { D1Row } from "../../types/MockD1Database";
 import { findTableKey, filterSchemaRow } from "../helpers.js";
 import { log } from "@variablesoftware/logface";
+import { matchesWhere } from "../whereMatcher.js";
 
 /**
  * Handles SELECT * FROM <table> [WHERE ...] statements for the mock D1 engine.
@@ -9,7 +10,6 @@ import { log } from "@variablesoftware/logface";
  * @param sql - The SQL SELECT statement string.
  * @param db - The in-memory database map.
  * @param bindArgs - The named bind arguments for the statement.
- * @param matchesWhere - A function to evaluate WHERE clause conditions.
  * @param mode - "all" to return all matching rows, "first" to return only the first.
  * @returns An object representing the result of the SELECT operation.
  * @throws If the SQL statement is malformed or required bind arguments are missing.
@@ -18,7 +18,6 @@ export function handleSelect(
   sql: string,
   db: Map<string, { rows: D1Row[] }>,
   bindArgs: Record<string, unknown>,
-  matchesWhere: (_row: D1Row, _cond: string, _bindArgs?: Record<string, unknown>) => boolean,
   mode: "all" | "first"
 ) {
   const isDebug = process.env.DEBUG === '1';
@@ -74,17 +73,19 @@ export function handleSelect(
       for (const name of bindNames) {
         if (!(name in bindArgs)) throw new Error(`Missing bind argument: ${name}`);
       }
+      // Normalize bindArgs keys to lower-case for WHERE matching
+      const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
       // Normalize row keys to lower-case for WHERE matching
       if (isDebug) {
         const matchResults = filteredRows.map((row, i) => {
           const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-          return { i, row, normRow, matches: matchesWhere(normRow, cond, bindArgs) };
+          return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
         });
         log.debug("SELECT <columns> matchesWhere results", matchResults);
       }
       filtered = filteredRows.filter(row => {
         const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-        return matchesWhere(normRow, cond, bindArgs);
+        return matchesWhere(normRow, cond, normBindArgs);
       });
       if (isDebug) log.debug("SELECT <columns> filtered rows", { filteredLength: filtered.length });
     }
@@ -135,17 +136,19 @@ export function handleSelect(
     for (const name of bindNames) {
       if (!(name in bindArgs)) throw new Error(`Missing bind argument: ${name}`);
     }
+    // Normalize bindArgs keys to lower-case for WHERE matching
+    const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
     // Normalize row keys to lower-case for WHERE matching
     if (isDebug) {
       const matchResults = filteredRows.map((row, i) => {
         const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-        return { i, row, normRow, matches: matchesWhere(normRow, cond, bindArgs) };
+        return { i, row, normRow, matches: matchesWhere(normRow, cond, normBindArgs) };
       });
       log.debug("SELECT * matchesWhere results", matchResults);
     }
     filtered = filteredRows.filter(row => {
       const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-      return matchesWhere(normRow, cond, bindArgs);
+      return matchesWhere(normRow, cond, normBindArgs);
     });
     if (isDebug) log.debug("SELECT * filtered rows", { filteredLength: filtered.length });
   }

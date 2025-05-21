@@ -16,7 +16,6 @@ import { handleTruncateTable } from "./statementHandlers/handleTruncateTable.js"
 import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn.js";
 // log import removed (was unused)
 // validateSQLSyntax import removed (was unused)
-import { matchesWhere } from "./helpers.js";
 
 interface Logger {
   debug: (..._args: unknown[]) => void;
@@ -112,17 +111,17 @@ export function createPreparedStatement(
 
     // SELECT * FROM
     if (/^select \*/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
+      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
     }
 
     // SELECT COUNT(*) FROM
     if (/^select count\(\*\) from/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
+      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
     }
 
     // SELECT <columns> FROM <table>
     if (/^select [^*]+ from \S+/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
+      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
     }
 
     // DELETE FROM
