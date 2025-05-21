@@ -5,7 +5,7 @@
  *
  * @see mockD1Database.basic.test.ts for basic CRUD tests.
  */
-import { mockD1Database } from "../src/mockD1Database";
+import { mockD1Database } from "../../src/mockD1Database";
 import { describe, expect, test } from "vitest";
 
 // process.env.LOG = 'none' || process.env.LOG;

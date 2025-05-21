@@ -6,8 +6,8 @@
  * @see mockD1Database.errors.test.ts for error/malformed query tests.
  * @see mockD1Database.stress.test.ts and mockD1Database.randomized.test.ts for stress and randomized tests.
  */
-import { mockD1Database } from "../src/mockD1Database";
-import { randomSnake, randomData } from "./helpers";
+import { mockD1Database } from "../../src/mockD1Database";
+import { randomSnake, randomData } from "../helpers";
 import { describe, expect, test } from "vitest";
 
 // process.env.LOG = 'none' || process.env.LOG;

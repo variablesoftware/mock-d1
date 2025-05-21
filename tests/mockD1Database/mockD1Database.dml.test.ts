@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach } from "vitest";
 // import { log } from "@variablesoftware/logface";
 // process.env.LOG = 'none' || process.env.LOG;
-import { mockD1Database } from "../src/mockD1Database";
+import { mockD1Database } from "../../src/mockD1Database";
 
 describe("DML operations", () => {
   let db: any;

@@ -5,8 +5,8 @@
  *
  * @see mockD1Database.randomized.test.ts for parallel/vigorous stress tests.
  */
-import { mockD1Database } from "../src/mockD1Database";
-import { randomSnake, randomData } from "./helpers";
+import { mockD1Database } from "../../src/mockD1Database";
+import { randomSnake, randomData } from "../helpers";
 import { describe, expect, test } from "vitest";
 
 // process.env.LOG = 'none' || process.env.LOG;

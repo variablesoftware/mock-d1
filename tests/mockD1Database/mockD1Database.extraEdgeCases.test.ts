@@ -1,6 +1,6 @@
 // Extra edge-case and property-based tests for mockD1Database
 import { describe, it, expect } from "vitest";
-import { createPreparedStatement } from "../src/engine/mockD1PreparedStatement";
+import { createPreparedStatement } from "../../src/engine/mockD1PreparedStatement";
 
 describe("mockD1Database extra edge cases", () => {
   it("should throw on SQL injection/malformed SQL", () => {

@@ -9,8 +9,8 @@
  *
  * @see mockD1Database.stress.test.ts for a focused single-threaded stress test.
  */
-import { mockD1Database } from "../src/mockD1Database";
-import { randomSnake, randomData } from "./helpers";
+import { mockD1Database } from "../../src/mockD1Database";
+import { randomSnake, randomData } from "../helpers";
 import { describe, expect, test } from "vitest";
 
 import { log } from "@variablesoftware/logface";
