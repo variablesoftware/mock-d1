@@ -45,7 +45,7 @@ await db.prepare("CREATE TABLE users (id INTEGER, name TEXT)").run();
 await db.prepare("INSERT INTO users (id, name) VALUES (:id, :name)").bind({ id: 1, name: 'alice' }).run();
 const result = await db.prepare("SELECT * FROM users WHERE id = :id").bind({ id: 1 }).all();
 if (!result.success || result.results.length !== 1 || result.results[0].name !== 'alice') {
-  throw new Error("mock-d1 put/get failed");
+  throw new Error("mock-d1 CREATE/INSERT/SELECT failed");
 }
 console.log("[I][test.mjs] mock-d1 smoke test ok");
 EOF
