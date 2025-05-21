@@ -19,6 +19,8 @@ describe("DML operations", () => {
   test("UPDATE ... SET ... updates all rows", async () => {
     db.inject("users", [{ id: 1 }, { id: 2 }]);
     await db.prepare("UPDATE users SET name = :name").bind({ name: "bob" }).run();
-    expect(db.dump().users.rows.every((r: any) => r.name === "bob")).toBe(true);
+    // Only check data rows (skip schema row)
+    const dataRows = db.dump().users.rows.filter(r => r.id !== undefined);
+    expect(dataRows.every((r: any) => r.name === "bob")).toBe(true);
   });
 });

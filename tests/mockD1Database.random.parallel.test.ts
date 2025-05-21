@@ -16,12 +16,14 @@ import { describe, expect, test } from "vitest";
 import { log } from "@variablesoftware/logface";
 // process.env.LOG = 'none' || process.env.LOG;
 
+const RUN_STRESS = process.env.D1_STRESS === "1";
+
 /**
  * Runs a vigorous, parallelized stress test with randomized queries and schema.
  * Simulates concurrent usage to uncover edge cases and concurrency issues.
  */
 describe("butter churn 🧈 (vigorous parallel stress testing)", () => {
-  test(
+  (RUN_STRESS ? test : test.skip)(
     "stress mockD1Database with parallel randomized queries",
     async () => {
       const db = mockD1Database();

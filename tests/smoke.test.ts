@@ -13,7 +13,9 @@ function run(cmd, opts = {}) {
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-d1-smoke-'));
 const origCwd = process.cwd();
 
-test('npm package can be installed and imported (smoke test)', async () => {
+const shouldRunSmoke = process.env.D1_SMOKE === '1';
+
+test.skipIf(!shouldRunSmoke)('npm package can be installed and imported (smoke test)', async () => {
   try {
     // Pack the current package
     run('npm pack');

@@ -37,10 +37,10 @@
 
 import { log } from "@variablesoftware/logface";
 import { createPreparedStatement } from "./engine/mockD1PreparedStatement.js";
-import { D1Row, MockD1PreparedStatement, FakeD1Result } from "./types/MockD1Database";
+import { D1Row, MockD1PreparedStatement, FakeD1Result, D1Database } from "./types/MockD1Database";
 import type { Logger } from "@variablesoftware/logface"; // adjust path as needed
 
-const logger: Logger = log.withTag(`mockD1:${Math.random().toString(36).slice(2, 7)}`);
+// Remove or comment out any global log statements not needed for debug/trace
 
 /**
  * Creates a new mock D1 database instance.
@@ -52,16 +52,8 @@ const logger: Logger = log.withTag(`mockD1:${Math.random().toString(36).slice(2,
  *  - inject(table, rows): preloads data into a table
  *  - withSession(): returns a session-scoped interface
  */
-export function mockD1Database(): unknown {
+export function mockD1Database(): D1Database {
   const db = new Map<string, { rows: D1Row[] }>();
-  //logger.debug("initialized");
-
-  /**
-   * Logs basic database stats for debugging.
-   */
-  //function dbStats() {
-  //  logger.debug("db size", db.size);
-  //}
 
   /**
    * Prepares a SQL statement for execution.
@@ -69,7 +61,7 @@ export function mockD1Database(): unknown {
    * @returns A mock prepared statement.
    */
   function prepare(sql: string): MockD1PreparedStatement {
-    return createPreparedStatement(sql, db, logger);
+    return createPreparedStatement(sql, db, log);
   }
 
   return {
@@ -92,7 +84,6 @@ export function mockD1Database(): unknown {
      * @returns An object mapping table names to their rows.
      */
     dump(): Record<string, { rows: D1Row[] }> {
-      //dbStats();
       return Object.fromEntries(db.entries());
     },
 
@@ -101,20 +92,46 @@ export function mockD1Database(): unknown {
      * @param table - The table name.
      * @param rows - The rows to inject.
      */
-    inject: (table: string, rows: D1Row[]) => {
-      db.set(table, { rows: [...rows] });
+    inject(table: string, rows: D1Row[]): void {
+      // Use case-insensitive table lookup to match existing tables
+      let tableKey = Array.from(db.keys()).find(k => k.toLowerCase() === table.toLowerCase()) || table;
+      if (!db.has(tableKey)) {
+        // If this is the first inject, use the provided case for the table name
+        db.set(tableKey, { rows: [] });
+      }
+      const tableRows = db.get(tableKey)!.rows;
+      // If injecting empty array, clear all rows (including schema row)
+      if (rows.length === 0) {
+        db.set(tableKey, { rows: [] });
+        return;
+      }
+      // Always ensure a schema row exists and all injected rows are normalized to canonical columns
+      let canonicalCols: string[];
+      if (tableRows.length === 0) {
+        // No schema row: use keys of first injected row as canonical columns
+        canonicalCols = Object.keys(rows[0]);
+        const schemaRow: Record<string, unknown> = {};
+        for (const col of canonicalCols) schemaRow[col] = undefined;
+        tableRows.push(schemaRow);
+      } else {
+        // Use schema row's keys as canonical columns
+        canonicalCols = Object.keys(tableRows[0]);
+        // If schema row is empty, patch it with first injected row's keys
+        if (canonicalCols.length === 0) {
+          canonicalCols = Object.keys(rows[0]);
+          for (const col of canonicalCols) tableRows[0][col] = undefined;
+        }
+      }
+      // Insert all injected rows normalized to canonical columns
+      for (const row of rows) {
+        const normalizedRow: Record<string, unknown> = {};
+        for (const col of canonicalCols) {
+          // Find matching key in row (case-insensitive)
+          const matchKey = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
+          normalizedRow[col] = matchKey ? row[matchKey] : null;
+        }
+        tableRows.push(normalizedRow);
+      }
     },
-
-    /**
-     * Returns a session-scoped interface for transactional-style usage.
-     * @returns An object with prepare, batch, and getBookmark methods.
-     */
-    withSession: () => ({
-      prepare,
-      batch: async <T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]> => {
-        return Promise.all(statements.map(stmt => stmt.run() as Promise<FakeD1Result<T>>));
-      },
-      getBookmark: () => null,
-    }),
   };
 }

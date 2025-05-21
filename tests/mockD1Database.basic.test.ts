@@ -110,3 +110,73 @@ describe("mockD1Database", () => {
     expect(remaining.results.length).toBe(0);
   });
 });
+
+describe("mockD1Database meta fields", () => {
+  test("insert meta fields are correct", async () => {
+    const db = mockD1Database();
+    const table = randomSnake();
+    const colA = randomSnake(1);
+    const colB = randomSnake(1);
+    await db.prepare(`CREATE TABLE ${table}`).run();
+    const insert = db.prepare(
+      `INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`
+    );
+    const data = randomData([colA, colB]);
+    const result = await insert.bind(data).run();
+    expect(result.success).toBe(true);
+    expect(result.meta.rows_written).toBe(1);
+    expect(result.meta.changes).toBe(1);
+    expect(result.meta.changed_db).toBe(true);
+    expect(result.meta.rows_read).toBe(0);
+  });
+
+  test("update meta fields are correct", async () => {
+    const db = mockD1Database();
+    const table = randomSnake();
+    const colA = randomSnake(1);
+    const colB = randomSnake(1);
+    await db.prepare(`CREATE TABLE ${table}`).run();
+    const data = randomData([colA, colB]);
+    await db.prepare(
+      `INSERT INTO ${table} (${colA}, ${colB}) VALUES (:${colA}, :${colB})`
+    ).bind(data).run();
+    const update = db.prepare(
+      `UPDATE ${table} SET ${colB} = :newVal WHERE ${colA} = :matchVal`
+    );
+    const result = await update.bind({ newVal: "updated", matchVal: data[colA] }).run();
+    expect(result.success).toBe(true);
+    expect(result.meta.rows_written).toBe(1);
+    expect(result.meta.changes).toBe(1);
+    expect(result.meta.changed_db).toBe(true);
+    expect(result.meta.rows_read).toBe(1);
+  });
+
+  test("delete meta fields are correct", async () => {
+    const db = mockD1Database();
+    const table = randomSnake();
+    await db.prepare(`CREATE TABLE ${table}`).run();
+    db.inject(table, [{ id: 1 }, { id: 2 }]);
+    const del = db.prepare(`DELETE FROM ${table} WHERE id = :id`).bind({ id: 1 });
+    const result = await del.run();
+    expect(result.success).toBe(true);
+    expect(result.meta.changes).toBe(1);
+    expect(result.meta.changed_db).toBe(true);
+    // For delete, rows_written and rows_read are 0 in current mock, but changes is correct
+    expect(result.meta.rows_written).toBe(0);
+    expect(result.meta.rows_read).toBe(0);
+  });
+
+  test("select meta fields are correct", async () => {
+    const db = mockD1Database();
+    const table = randomSnake();
+    await db.prepare(`CREATE TABLE ${table}`).run();
+    db.inject(table, [{ id: 1 }, { id: 2 }]);
+    const select = db.prepare(`SELECT * FROM ${table} WHERE id = :id`).bind({ id: 1 });
+    const result = await select.all();
+    expect(result.success).toBe(true);
+    expect(result.meta.rows_read).toBe(1);
+    expect(result.meta.rows_written).toBe(0);
+    expect(result.meta.changes).toBe(0);
+    expect(result.meta.changed_db).toBe(false);
+  });
+});

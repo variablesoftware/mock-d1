@@ -13,10 +13,27 @@ export function handleCreateTable(
   sql: string,
   db: Map<string, { rows: D1Row[] }>
 ) {
-  const tableMatch = sql.match(/create table(?: if not exists)? ([a-zA-Z0-9_]+)/i);
+  const tableMatch = sql.match(/create table(?: if not exists)? (\S+)/i);
   if (!tableMatch) throw new Error("Malformed CREATE TABLE statement.");
   const table = tableMatch[1];
-  if (!db.has(table)) db.set(table, { rows: [] });
+  // Parse columns from CREATE TABLE statement
+  const colMatch = sql.match(/\(([^)]+)\)/);
+  let columns: string[] = [];
+  if (colMatch) {
+    // Only use the column name (first word) for canonical columns
+    columns = colMatch[1].split(",").map(s => s.trim().split(/\s+/)[0]);
+    if (columns.length === 0 || columns.some(c => !c)) {
+      throw new Error("Malformed CREATE TABLE statement: must define at least one column");
+    }
+  }
+  // Only add the table if a case-insensitive match does not already exist
+  const tableKey = Array.from(db.keys()).find(k => k.toLowerCase() === table.toLowerCase());
+  if (!tableKey) {
+    // Always create a schema row (even for no columns)
+    const row: Record<string, unknown> = {};
+    for (const col of columns) row[col] = undefined;
+    db.set(table, { rows: [row] });
+  }
   return {
     success: true,
     results: [],

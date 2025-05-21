@@ -77,3 +77,13 @@ export interface MockD1PreparedStatement {
    */
   raw(): Promise<unknown[]>;
 }
+
+/**
+ * Represents a D1 database.
+ */
+export interface D1Database {
+  prepare(sql: string): MockD1PreparedStatement;
+  batch<T = unknown>(statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]>;
+  dump(): Record<string, { rows: D1Row[] }>;
+  inject(table: string, rows: D1Row[]): void;
+}

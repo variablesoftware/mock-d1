@@ -15,6 +15,8 @@ import { handleDropTable } from "./statementHandlers/handleDropTable.js";
 import { handleTruncateTable } from "./statementHandlers/handleTruncateTable.js";
 import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableAddColumn.js";
 import { log } from "@variablesoftware/logface";
+import { validateSQLSyntax } from "./sqlValidation.js";
+import { matchesWhere } from "./helpers.js";
 
 interface Logger {
   debug: (...args: unknown[]) => void;
@@ -39,7 +41,12 @@ export function createPreparedStatement(
   db: Map<string, { rows: D1Row[] }>,
   _logger: Logger | undefined
 ): MockD1PreparedStatement {
-  // Throw on unsupported SQL at prepare-time
+  // log.debug('Preparing statement: %s', sql);
+  // Reject multiple SQL statements in one string
+  if (/;/.test(sql.trim().replace(/;$/, ''))) {
+    throw new Error("Multiple SQL statements in one string are not supported.");
+  }
+  // Throw on unsupported SQL at prepare-time (D1 behavior)
   if (
     /\blike\b/i.test(sql) ||
     /\bbetween\b/i.test(sql) ||
@@ -48,8 +55,38 @@ export function createPreparedStatement(
     throw new Error("Unsupported SQL syntax in mockD1Database: LIKE, BETWEEN, JOIN not implemented.");
   }
 
-  if (!isSupportedSQL(sql)) {
-    throw new Error("Malformed or unsupported SQL syntax.");
+  // Strict SQL validation for malformed statements at prepare-time
+  const upperSql = sql.trim().toUpperCase();
+  // Accept SQL keywords as table/column names by relaxing regexes
+  if (upperSql.startsWith("CREATE TABLE")) {
+    // CREATE TABLE <name> (<columns>) must have at least one column
+    // Match: CREATE TABLE <name> ( ... )
+    const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
+    if (match) {
+      const columns = match[1].trim();
+      // If columns is empty or only whitespace, throw
+      if (!columns || /^\s*$/.test(columns)) {
+        throw new Error("Syntax error: CREATE TABLE must define at least one column");
+      }
+    }
+  }
+  if (upperSql.startsWith("SELECT")) {
+    // SELECT must have at least: SELECT <columns> FROM <table>
+    if (!/^SELECT\s+.+\s+FROM\s+\S+/i.test(sql)) {
+      throw new Error("Malformed SELECT statement");
+    }
+  } else if (upperSql.startsWith("INSERT")) {
+    // INSERT must have: INSERT INTO <table> (<cols>) VALUES (<vals>)
+    if (!/^INSERT INTO \S+ \(.*\) VALUES \(.*\)/i.test(sql)) {
+      throw new Error("Malformed INSERT statement");
+    }
+  } else if (upperSql.startsWith("DELETE")) {
+    // DELETE must have: DELETE FROM <table>
+    if (!/^DELETE FROM \S+/i.test(sql)) {
+      throw new Error("Malformed DELETE statement");
+    }
+  } else if (!isSupportedSQL(sql)) {
+    throw new Error(`Malformed SQL statement: ${upperSql.split(' ')[0]}`);
   }
 
   let bindArgs: Record<string, unknown> = {};
@@ -62,10 +99,8 @@ export function createPreparedStatement(
    * @returns The result of the statement execution.
    */
   function parseAndRun(mode: "run" | "all" | "first" | "raw") {
-    const validModes: ('all' | 'first')[] = ['all', 'first'];
-    const resolvedMode: 'all' | 'first' = validModes.includes(mode as 'all' | 'first') ? (mode as 'all' | 'first') : 'all';
-
-    // CREATE TABLE
+    // log.debug('Executing statement: %s (mode: %s)', sql, mode);
+    // Use the original SQL for all handler calls
     if (/^create table/i.test(sql)) {
       return handleCreateTable(sql, db);
     }
@@ -77,17 +112,17 @@ export function createPreparedStatement(
 
     // SELECT * FROM
     if (/^select \*/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
+      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
     }
 
     // SELECT COUNT(*) FROM
     if (/^select count\(\*\) from/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
+      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
     }
 
     // SELECT <columns> FROM <table>
-    if (/^select [\w,\s]+ from [a-zA-Z0-9_]+/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, matchesWhere, resolvedMode);
+    if (/^select [^*]+ from \S+/i.test(sql)) {
+      return handleSelect(sql, db, bindArgs, matchesWhere, mode === 'first' ? 'first' : 'all');
     }
 
     // DELETE FROM
@@ -96,7 +131,7 @@ export function createPreparedStatement(
     }
 
     // UPDATE <table> SET <col> = :val WHERE <col2> = :val2
-    if (/^update [a-zA-Z0-9_]+ set /i.test(sql)) {
+    if (/^update \S+ set /i.test(sql)) {
       return handleUpdate(sql, db, bindArgs);
     }
 
@@ -111,33 +146,13 @@ export function createPreparedStatement(
     }
 
     // ALTER TABLE ADD COLUMN
-    if (/^alter table [a-zA-Z0-9_]+ add column/i.test(sql)) {
+    if (/^alter table \S+ add column/i.test(sql)) {
       return handleAlterTableAddColumn(sql, db);
     }
 
     // Default: throw for unsupported SQL
-    throw new Error("SQL query uses unsupported syntax or features in this mock database.");
+    throw new Error(`Malformed SQL statement: ${sql.trim().split(' ')[0].toUpperCase()}`);
   }
-
-  const matchesWhere: (_row: D1Row, _cond: string, _bindArgs?: Record<string, unknown>) => boolean = (_row, _cond, _bindArgs) => {
-    if (!_bindArgs || !_cond) return false;
-
-    // Split on OR first (lowest precedence)
-    const orGroups = _cond.split(/\s+OR\s+/i);
-    for (const group of orGroups) {
-      // Each group: split on AND (higher precedence)
-      const andConds = group.split(/\s+AND\s+/i);
-      const andResult = andConds.every(cond => {
-        // Support only equality: key = :bind
-        const m = cond.match(/([\w.]+)\s*=\s*:(\w+)/);
-        if (!m) return false;
-        const [, key, bind] = m;
-        return _row[key] === _bindArgs[bind];
-      });
-      if (andResult) return true; // If any OR group is true, return true
-    }
-    return false; // None matched
-  };
 
   return {
     /**

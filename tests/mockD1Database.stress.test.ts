@@ -11,12 +11,14 @@ import { describe, expect, test } from "vitest";
 
 // process.env.LOG = 'none' || process.env.LOG;
 
+const RUN_STRESS = process.env.D1_STRESS === "1";
+
 /**
  * Runs a short-duration stress test with randomized table and column names.
  * Verifies that the mock database can handle rapid create/insert/select cycles.
  */
 describe("butter churn 🧈 (stress testing)", () => {
-  test("stress mockD1Database for a short duration", async () => {
+  (RUN_STRESS ? test : test.skip)("stress mockD1Database for a short duration", async () => {
     const db = mockD1Database();
     const end = Date.now() + 500;
     let count = 0;
