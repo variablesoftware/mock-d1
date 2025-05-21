@@ -14,7 +14,6 @@ import { randomSnake, randomData } from "../helpers";
 import { describe, expect, test } from "vitest";
 
 import { log } from "@variablesoftware/logface";
-// process.env.LOG = 'none' || process.env.LOG;
 
 const RUN_STRESS = process.env.D1_STRESS === "1";
 
