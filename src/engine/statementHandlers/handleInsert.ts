@@ -1,10 +1,10 @@
 import { D1Row } from "../../types/MockD1Database";
-import { z } from "zod";
+import { z, RefinementCtx } from "zod";
 import { findTableKey, filterSchemaRow } from "../helpers.js";
 import { log } from "@variablesoftware/logface";
 
 // Accept any JSON-serializable value except function, symbol, bigint, undefined
-const bindArgsSchema = z.record(z.string(), z.any()).superRefine((args, ctx) => {
+const bindArgsSchema = z.record(z.string(), z.any()).superRefine((args: Record<string, unknown>, ctx: RefinementCtx) => {
   for (const [key, value] of Object.entries(args)) {
     if (
       typeof value === 'function' ||
