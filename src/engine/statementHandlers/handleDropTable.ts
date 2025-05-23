@@ -1,5 +1,8 @@
 import { D1Row } from "../../types/MockD1Database";
-import { findTableKey } from "../helpers.js";
+import { extractTableName } from '../tableUtils/tableNameUtils.js';
+import { findTableKey } from '../tableUtils/tableLookup.js';
+import { d1Error } from '../errors.js';
+import { validateSqlOrThrow } from '../sqlValidation.js';
 
 /**
  * Handles DROP TABLE <table> statements.
@@ -8,12 +11,15 @@ export function handleDropTable(
   sql: string,
   db: Map<string, { rows: D1Row[] }>
 ) {
-  const tableMatch = sql.match(/drop table (\S+)/i);
-  if (!tableMatch) throw new Error("Malformed DROP TABLE statement.");
-  const table = tableMatch[1];
-  // Case-insensitive table lookup using helper
-  const tableKey = findTableKey(db, table);
-  if (!tableKey) throw new Error(`Table '${table}' does not exist in the database.`);
+  validateSqlOrThrow(sql);
+  let tableName: string;
+  try {
+    tableName = extractTableName(sql, 'DROP');
+  } catch (err) {
+    throw new Error("Malformed DROP TABLE statement.");
+  }
+  const tableKey = findTableKey(db, tableName);
+  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
   db.delete(tableKey);
   return {
     success: true,

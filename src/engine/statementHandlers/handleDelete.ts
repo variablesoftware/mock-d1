@@ -1,7 +1,12 @@
 import { D1Row } from "../../types/MockD1Database";
-import { matchesWhere } from "../whereMatcher.js";
-import { findTableKey, filterSchemaRow } from "../helpers.js";
+import { filterSchemaRow, matchesWhere } from "../helpers.js";
 import { log } from "@variablesoftware/logface";
+import { extractTableName } from '../tableUtils/tableNameUtils.js';
+import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
+import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
+import { d1Error } from '../errors.js';
+import { evaluateWhereClause } from '../where/evaluateWhereClause.js';
+import { validateSqlOrThrow } from '../sqlValidation.js';
 
 /**
  * Handles DELETE FROM <table> [WHERE ...] statements for the mock D1 engine.
@@ -18,22 +23,19 @@ export function handleDelete(
   db: Map<string, { rows: D1Row[] }>,
   bindArgs: Record<string, unknown>
 ) {
-  const isDebug = process.env.DEBUG === '1';
-  if (isDebug) log.debug("called", { sql, bindArgs });
-  // Support quoted identifiers and normalize table name to lower-case
-  // Matches: DELETE FROM <table> [WHERE ...], where <table> can be quoted, unquoted, or a SQL keyword
-  const tableMatch = sql.match(/delete from\s+([`"[])(.+?)\1|delete from\s+([\w$]+)/i);
-  if (!tableMatch) throw new Error("Malformed DELETE statement.");
-  // Extract table name, strip quotes if present, and normalize to lower-case
-  const table = (tableMatch[2] || tableMatch[3]).toLowerCase();
-  if (isDebug) log.debug("normalized table name", { raw: tableMatch[1] ? tableMatch[1] + (tableMatch[2] || '') + tableMatch[1] : tableMatch[3], table });
-  // Case-insensitive table lookup using helper
-  const tableKey = findTableKey(db, table);
-  // Only log at debug for before/after state and info for summary
-  if (isDebug) log.debug("tableKey resolved", { table, tableKey });
-  if (!tableKey) throw new Error(`Table '${table}' does not exist in the database.`);
+  validateSqlOrThrow(sql);
+  log.debug("called", { sql, bindArgs });
+  let tableName: string;
+  try {
+    tableName = extractTableName(sql, 'DELETE');
+  } catch (err) {
+    throw new Error("Malformed DELETE statement.");
+  }
+  const tableKey = findTableKey(db, tableName);
+  log.debug("tableKey resolved", { tableKey });
+  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
   const rows = db.get(tableKey)?.rows ?? [];
-  if (isDebug) log.debug("rows before", { rows });
+  log.debug("rows before", { rows });
   const dataRows = filterSchemaRow(rows);
   let toDelete: D1Row[] = [];
   const whereMatch = sql.match(/where (.+)$/i);
@@ -45,41 +47,51 @@ export function handleDelete(
         throw new Error(`Missing bind argument: ${name}`);
       }
     }
+    // Normalize bindArgs keys to lower-case for WHERE matching
+    const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
     toDelete = dataRows.filter(row => {
       const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-      return matchesWhere(normRow, cond, bindArgs);
+      return evaluateWhereClause(cond, normRow, normBindArgs);
     });
   } else {
     toDelete = dataRows;
   }
-  const schemaRow = rows.length > 0 ? rows[0] : undefined;
-  const remainingDataRows = dataRows.filter(r => !toDelete.includes(r));
+  // D1-accurate: DELETE removes all rows, including schema row, if no WHERE clause
   let newRows: D1Row[];
-  if (remainingDataRows.length === 0) {
+  let deletedCount = 0;
+  if (!whereMatch) {
+    // DELETE FROM <table>: clear all rows (including schema row)
+    deletedCount = filterSchemaRow(rows).length;
     newRows = [];
-    if (isDebug) log.debug("all data rows deleted, table will be empty");
   } else {
-    if (schemaRow && Object.values(schemaRow).some(v => v !== undefined)) {
-      newRows = [schemaRow, ...remainingDataRows];
+    // DELETE FROM <table> WHERE ...: always preserve schema row if present (even if empty)
+    const schemaRow = rows.length > 0 ? rows[0] : undefined;
+    let afterRows: D1Row[];
+    if (schemaRow && (Object.keys(schemaRow).length === 0 || Object.values(schemaRow).every(v => typeof v === 'undefined' || v === null))) {
+      // Schema row is empty object or all undefined/null: preserve it
+      afterRows = [schemaRow, ...dataRows.filter(r => !toDelete.includes(r))];
     } else {
-      newRows = [...remainingDataRows];
+      afterRows = dataRows.filter(r => !toDelete.includes(r));
     }
+    // Count deleted rows as those in toDelete
+    deletedCount = toDelete.length;
+    newRows = afterRows;
   }
   db.set(tableKey, { rows: newRows });
-  if (isDebug) log.debug("final table rows", { tableKey, newRows });
-  log.info("deleted rows", { changes: toDelete.length, size_after: filterSchemaRow(newRows).length });
+  log.debug("final table rows", { tableKey, newRows });
+  log.info("deleted rows", { changes: deletedCount, size_after: filterSchemaRow(newRows).length });
   return {
     success: true,
     results: [],
-    changes: toDelete.length,
+    changes: deletedCount,
     meta: {
       duration: 0,
       size_after: filterSchemaRow(newRows).length,
       rows_read: 0, // always 0 for DELETE per test expectation
       rows_written: 0, // always 0 for DELETE per test expectation
       last_row_id: 0,
-      changed_db: toDelete.length > 0,
-      changes: toDelete.length,
+      changed_db: deletedCount > 0,
+      changes: deletedCount,
     },
   };
 }

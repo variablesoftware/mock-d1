@@ -1,5 +1,9 @@
 import { D1Row } from "../../types/MockD1Database";
-import { findTableKey } from "../helpers.js";
+import { extractTableName } from '../tableUtils/tableNameUtils.js';
+import { log } from "@variablesoftware/logface";
+import { findTableKey } from '../tableUtils/tableLookup.js';
+import { d1Error } from '../errors.js';
+import { validateSqlOrThrow } from '../sqlValidation.js';
 
 /**
  * Handles TRUNCATE TABLE <table> statements.
@@ -8,14 +12,23 @@ export function handleTruncateTable(
   sql: string,
   db: Map<string, { rows: D1Row[] }>
 ) {
-  const tableMatch = sql.match(/truncate table (\S+)/i);
-  if (!tableMatch) throw new Error("Malformed TRUNCATE TABLE statement.");
-  const table = tableMatch[1];
-  // Case-insensitive table lookup using helper
-  const tableKey = findTableKey(db, table);
-  if (!tableKey) throw new Error(`Table '${table}' does not exist in the database.`);
+  validateSqlOrThrow(sql);
+  log.debug("handleTruncateTable called", { sql });
+  let tableName: string;
+  try {
+    tableName = extractTableName(sql, 'TRUNCATE');
+  } catch (err) {
+    throw new Error("Malformed TRUNCATE TABLE statement.");
+  }
+  const tableKey = findTableKey(db, tableName);
+  log.debug("handleTruncateTable tableKey lookup", { tableName, tableKey });
+  if (!tableKey) {
+    log.error("Table does not exist in the database", { tableName });
+    throw d1Error('TABLE_NOT_FOUND', tableName);
+  }
   // Always remove all rows, including schema row, on TRUNCATE
   db.set(tableKey, { rows: [] });
+  log.info("Table truncated", { tableKey });
   return {
     success: true,
     results: [],

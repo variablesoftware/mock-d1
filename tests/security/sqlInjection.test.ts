@@ -14,14 +14,14 @@
 
 // Security: SQL injection and malformed SQL tests for mockD1Database
 import { describe, it, expect } from "vitest";
-import { createPreparedStatement } from "../../src/engine/mockD1PreparedStatement";
+import { createPreparedStatement } from "../../src/engine/preparedStatement";
 
 describe("SQL Injection and Malformed SQL", () => {
   it("should not allow SQL injection via bind values", () => {
     const db = new Map();
     // Ensure the table exists so SELECT does not throw
-    createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db, undefined).run();
-    const stmt = createPreparedStatement("SELECT * FROM users WHERE name = :name", db, undefined);
+    createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db).run();
+    const stmt = createPreparedStatement("SELECT * FROM users WHERE name = :name", db);
     stmt.bind({ name: "' OR 1=1; --" });
     // Should not throw, but should not match all rows either (if any rows existed)
     expect(() => stmt.run()).not.toThrow();
@@ -29,17 +29,17 @@ describe("SQL Injection and Malformed SQL", () => {
 
   it("should throw on multiple statements in one string", () => {
     const db = new Map();
-    expect(() => createPreparedStatement("SELECT * FROM users; DROP TABLE users;", db, undefined)).toThrow();
+    expect(() => createPreparedStatement("SELECT * FROM users; DROP TABLE users;", db)).toThrow();
   });
 
   it("should throw on malformed SQL", async () => {
     const db = new Map();
     // Ensure the table exists so only SQL syntax is tested
-    await createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db, undefined).run();
+    await createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db).run();
     // This statement is incomplete but currently returns an empty result (does not throw)
-    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db, undefined).run()).resolves.toBeDefined();
-    await expect(createPreparedStatement("SELECT * FROM users WHERE ", db, undefined).run()).rejects.toThrow();
+    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db).run()).resolves.toBeDefined();
+    await expect(createPreparedStatement("SELECT * FROM users WHERE ", db).run()).rejects.toThrow();
     // Strict D1: should throw on missing bind argument
-    await expect(createPreparedStatement("INSERT INTO users (id) VALUES (:id)", db, undefined).run()).rejects.toThrow("Missing bind argument");
+    await expect(createPreparedStatement("INSERT INTO users (id) VALUES (:id)", db).run()).rejects.toThrow("Missing bind argument");
   });
 });

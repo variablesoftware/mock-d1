@@ -1,22 +1,23 @@
-import { describe, it, expect } from 'vitest';
-import { handleCreateTable } from '../../src/engine/statementHandlers/handleCreateTable';
-import { handleInsert } from '../../src/engine/statementHandlers/handleInsert';
-import { handleDelete } from '../../src/engine/statementHandlers/handleDelete';
-import { handleUpdate } from '../../src/engine/statementHandlers/handleUpdate';
-import { handleDropTable } from '../../src/engine/statementHandlers/handleDropTable';
-import { handleTruncateTable } from '../../src/engine/statementHandlers/handleTruncateTable';
-import { handleAlterTableAddColumn } from '../../src/engine/statementHandlers/handleAlterTableAddColumn';
-import { handleSelect } from '../../src/engine/statementHandlers/handleSelect';
+import { describe, it, expect } from "vitest";
+import { handleCreateTable } from "../../src/engine/statementHandlers/handleCreateTable";
 
-function newDb() {
-  return new Map<string, { rows: any[] }>();
-}
+describe("handleCreateTable", () => {
+  it("should create a table in the db map", () => {
+    const db = new Map();
+    handleCreateTable("CREATE TABLE foo (id INTEGER, name TEXT)", db);
+    expect(db.has("foo")).toBe(true);
+    expect(db.get("foo")?.rows[0]).toEqual({ id: undefined, name: undefined });
+  });
 
-describe('handleCreateTable', () => {
-  it('creates a table', () => {
-    const db = newDb();
-    const result = handleCreateTable('CREATE TABLE users (id INTEGER, name TEXT)', db);
-    expect(result.success).toBe(true);
-    expect(db.has('users')).toBe(true);
+  it("should throw if table already exists", () => {
+    const db = new Map();
+    handleCreateTable("CREATE TABLE foo (id INTEGER)", db);
+    expect(() => handleCreateTable("CREATE TABLE foo (id INTEGER)", db)).toThrow();
+  });
+
+  it("should throw on malformed CREATE TABLE statement", () => {
+    const db = new Map();
+    expect(() => handleCreateTable("CREATE TABLE foo ()", db)).toThrow();
+    expect(() => handleCreateTable("CREATE TABLE", db)).toThrow();
   });
 });

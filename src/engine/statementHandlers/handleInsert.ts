@@ -2,6 +2,11 @@ import { D1Row } from "../../types/MockD1Database";
 import { z, RefinementCtx } from "zod";
 import { findTableKey, filterSchemaRow } from "../helpers.js";
 import { log } from "@variablesoftware/logface";
+import { extractTableName, normalizeTableName, getTableKey } from '../tableUtils/tableNameUtils.js';
+import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
+import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
+import { d1Error } from '../errors.js';
+import { validateSqlOrThrow } from '../sqlValidation.js';
 
 // Accept any JSON-serializable value except function, symbol, bigint, undefined
 const bindArgsSchema = z.record(z.string(), z.any()).superRefine((args: Record<string, unknown>, ctx: RefinementCtx) => {
@@ -48,8 +53,8 @@ export function handleInsert(
   db: Map<string, { rows: D1Row[] }>,
   bindArgs: Record<string, unknown> = {} // Default to an empty object
 ) {
-  const isDebug = process.env.DEBUG === '1';
-  if (isDebug) log.debug("called", { sql, bindArgs });
+  validateSqlOrThrow(sql);
+  log.debug("called", { sql, bindArgs });
 
   // Validate bind arguments
   try {
@@ -59,42 +64,46 @@ export function handleInsert(
     throw new Error("Unsupported data type");
   }
 
-  // Relaxed regex: allow quoted identifiers, SQL keywords, and bracketed names
-  const tableMatch = sql.match(/insert into\s+([`"[])?([\w$]+)\1?/i);
+  let tableName: string;
+  try {
+    tableName = extractTableName(sql, 'INSERT');
+  } catch (err) {
+    throw new Error("Malformed INSERT statement");
+  }
+  let tableKey = findTableKey(db, tableName);
+  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
   const colMatch = sql.match(/\(([^)]+)\)/);
   const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
 
-  if (!tableMatch || !colMatch || !valuesMatch) {
+  if (!colMatch || !valuesMatch) {
     log.error("malformed INSERT", { sql });
     throw new Error("Malformed INSERT statement");
   }
+  if (sql.indexOf(colMatch[0]) > sql.indexOf(valuesMatch[0])) {
+    log.error("malformed INSERT: columns after values", { sql });
+    throw new Error("Malformed INSERT statement");
+  }
 
-  if (isDebug) log.debug("regex matches", { tableMatch, colMatch, valuesMatch });
-
-  // Extract table name, strip quotes if present, and normalize to lower-case
-  const table = tableMatch[2].toLowerCase();
-  // Case-insensitive table lookup using helper
-  let tableKey = findTableKey(db, table);
+  // If table does not exist, auto-create with D1-accurate key logic
   if (!tableKey) {
-    // Auto-create table with schema row using columns from insert
-    log.debug("auto-creating table", { table });
+    const newTableKey = normalizeTableName(tableName);
+    log.debug("auto-creating table", { tableName, newTableKey });
     const schemaRow: Record<string, unknown> = {};
-    const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
+    const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
     for (const col of columns) schemaRow[col] = undefined;
-    db.set(table, { rows: [schemaRow] });
-    tableKey = table;
+    db.set(newTableKey, { rows: [schemaRow] });
+    tableKey = newTableKey;
   }
   const tableData = db.get(tableKey);
   if (!tableData) {
     log.error("missing tableData after lookup", { tableKey });
-    throw new Error(`Table '${table}' does not exist in the database.`);
+    throw new Error(`Table '${tableName}' does not exist in the database.`);
   }
-
-  if (isDebug) log.debug("normalized table name", { raw: tableMatch[1] + tableMatch[2] + tableMatch[1], table });
-  if (isDebug) log.debug("tableKey", { table, tableKey });
+  log.debug("normalized table name", { raw: tableName });
+  log.debug("tableKey", { tableName, tableKey });
 
   // Normalize columns to lower-case for all lookups and assignments
-  const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
+  const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
   const values = valuesMatch[1].split(",").map(s => s.trim());
 
   if (columns.length !== values.length) {
@@ -139,20 +148,18 @@ export function handleInsert(
     throw new Error("Attempted to insert with columns not present in schema");
   }
 
-  // Use bindKeys from earlier in the function
-  const normalizedRow: Record<string, unknown> = {};
-  for (const canonicalCol of canonicalCols) {
-    // Use value from row (already parsed above)
-    normalizedRow[canonicalCol] = row[canonicalCol];
-  }
-  if (isDebug) log.debug("inserting normalizedRow (normalized)", { normalizedRow, tableKey });
+  // Validate and normalize row against schema
+  validateRowAgainstSchema(tableData.rows[0], row);
+  const normalizedRow = normalizeRowToSchema(tableData.rows[0], row);
+
+  log.debug("inserting normalizedRow (normalized)", { normalizedRow, tableKey });
   if (tableData.rows.length && Object.values(tableData.rows[0]).every(v => typeof v === 'undefined')) {
     tableData.rows.splice(1, 0, normalizedRow);
   } else {
     tableData.rows.push(normalizedRow);
   }
 
-  if (isDebug) log.debug("final table rows", { tableKey, rows: tableData.rows });
+  log.debug("final table rows", { tableKey, rows: tableData.rows });
   log.info("handleInsert: row inserted", { tableKey, rowCount: tableData.rows.length });
   return {
     success: true,
