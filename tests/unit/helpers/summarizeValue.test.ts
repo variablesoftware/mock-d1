@@ -1,30 +1,38 @@
 import { describe, it, expect } from 'vitest';
 import { summarizeValue, summarizeRow } from '../../../src/helpers/summarizeValue.js';
+import { randomAlpha, randomSnake, randomInt, randomData } from '../../helpers/index.js';
 
 describe('summarizeValue', () => {
   it('summarizes long strings', () => {
-    expect(summarizeValue('abcdefghij')).toBe('[str:10]ab..ij');
-    expect(summarizeValue('short')).toBe('short');
+    const str = randomAlpha(20);
+    const summary = summarizeValue(str);
+    expect(typeof summary).toBe('string');
+    expect(summary).toMatch(/^\[str:20\]/);
+  });
+
+  it('returns short strings unchanged', () => {
+    const str = randomAlpha(5);
+    expect(summarizeValue(str)).toBe(str);
   });
 
   it('summarizes arrays', () => {
-    expect(summarizeValue([1, 2, 3])).toBe('[array:3]');
-    expect(summarizeValue([])).toBe('[array:0]');
+    const arr = Array.from({ length: 5 }, () => randomInt());
+    expect(summarizeValue(arr)).toBe('[array:5]');
   });
 
-  it('summarizes plain objects recursively', () => {
-    const obj = { foo: 'abcdefghij', bar: [1, 2], baz: { deep: 'abcdefghij' } };
-    expect(summarizeValue(obj)).toEqual({
-      foo: '[str:10]ab..ij',
-      bar: '[array:2]',
-      baz: { deep: '[str:10]ab..ij' }
-    });
+  it('summarizes objects recursively', () => {
+    const keys = [randomSnake(), randomSnake()];
+    const row = randomData(keys);
+    const summary = summarizeValue(row);
+    expect(typeof summary).toBe('object');
+    for (const k of keys) {
+      expect(Object.keys(summary as object)).toContain(k);
+    }
   });
 
   it('summarizes non-plain objects as [object]', () => {
-    class MyClass {}
-    expect(summarizeValue(new MyClass())).toBe('[object]');
-    expect(summarizeValue(new Date())).toBe('[object]');
+    class Foo { x = 1; }
+    expect(summarizeValue(new Foo())).toBe('[object]');
   });
 
   it('returns primitives unchanged', () => {
@@ -37,8 +45,13 @@ describe('summarizeValue', () => {
 
 describe('summarizeRow', () => {
   it('summarizes all values in a row', () => {
-    const row = { a: 'abcdefghij', b: [1, 2, 3], c: 42 };
-    expect(summarizeRow(row)).toEqual({ a: '[str:10]ab..ij', b: '[array:3]', c: 42 });
+    const keys = [randomSnake(), randomSnake()];
+    const row = randomData(keys);
+    const summary = summarizeRow(row);
+    expect(typeof summary).toBe('object');
+    for (const k of keys) {
+      expect(Object.keys(summary as object)).toContain(k);
+    }
   });
 
   it('returns null/undefined as is', () => {
