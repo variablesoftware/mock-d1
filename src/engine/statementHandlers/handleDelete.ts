@@ -1,11 +1,11 @@
-import { D1Row } from "../../types/MockD1Database";
-import { filterSchemaRow, matchesWhere } from "../helpers.js";
+import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/helpers.js";
 import { log } from "@variablesoftware/logface";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
-import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
-import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
+import { findTableKey } from '../tableUtils/tableLookup.js';
 import { d1Error } from '../errors.js';
-import { evaluateWhereClause } from '../where/evaluateWhereClause.js';
+import { evaluateWhereAst } from '../where/whereEvaluator.js';
+import { parseWhereClause } from '../where/whereParser.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
 
 /**
@@ -20,22 +20,28 @@ import { validateSqlOrThrow } from '../sqlValidation.js';
  */
 export function handleDelete(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>,
+  db: Map<string, D1TableData>,
   bindArgs: Record<string, unknown>
 ) {
+  const isDebug = process.env.DEBUG === '1';
   validateSqlOrThrow(sql);
-  log.debug("called", { sql, bindArgs });
+  log.debug("called", { sql, bindArgs: summarizeValue(bindArgs) });
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'DELETE');
-  } catch (err) {
+  } catch {
+    if (isDebug) log.error("Malformed DELETE statement", { sql });
     throw new Error("Malformed DELETE statement.");
   }
   const tableKey = findTableKey(db, tableName);
   log.debug("tableKey resolved", { tableKey });
-  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
-  const rows = db.get(tableKey)?.rows ?? [];
-  log.debug("rows before", { rows });
+  if (!tableKey) {
+    if (isDebug) log.error("TABLE_NOT_FOUND", { tableName, sql });
+    throw d1Error('TABLE_NOT_FOUND', tableName);
+  }
+  const tableData = db.get(tableKey);
+  const rows = tableData?.rows ?? [];
+  log.debug("rows before", { rows: rows.map(summarizeRow) });
   const dataRows = filterSchemaRow(rows);
   let toDelete: D1Row[] = [];
   const whereMatch = sql.match(/where (.+)$/i);
@@ -44,6 +50,7 @@ export function handleDelete(
     const bindNames = Array.from(cond.matchAll(/:([a-zA-Z0-9_]+)/g)).map(m => m[1]);
     for (const name of bindNames) {
       if (!(Object.keys(bindArgs).some(k => k.toLowerCase() === name.toLowerCase()))) {
+        if (isDebug) log.error("Missing bind argument in DELETE", { name, sql, bindArgs: summarizeValue(bindArgs) });
         throw new Error(`Missing bind argument: ${name}`);
       }
     }
@@ -51,7 +58,8 @@ export function handleDelete(
     const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
     toDelete = dataRows.filter(row => {
       const normRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
-      return evaluateWhereClause(cond, normRow, normBindArgs);
+      const ast = parseWhereClause(cond);
+      return evaluateWhereAst(ast, normRow, normBindArgs);
     });
   } else {
     toDelete = dataRows;
@@ -77,8 +85,8 @@ export function handleDelete(
     deletedCount = toDelete.length;
     newRows = afterRows;
   }
-  db.set(tableKey, { rows: newRows });
-  log.debug("final table rows", { tableKey, newRows });
+  db.set(tableKey, { ...tableData, columns: tableData?.columns || [], rows: newRows });
+  log.debug("final table rows", { tableKey, newRows: newRows.map(summarizeRow) });
   log.info("deleted rows", { changes: deletedCount, size_after: filterSchemaRow(newRows).length });
   return {
     success: true,

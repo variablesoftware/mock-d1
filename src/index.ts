@@ -53,7 +53,7 @@ import { mockBatch } from "./helpers/mockBatch.js";
  *  - withSession(): returns a session-scoped interface
  */
 export function mockD1Database(): D1Database {
-  const db = new Map<string, { rows: D1Row[] }>();
+  const db = new Map<string, { rows: D1Row[]; columns: import('./types/MockD1Database.js').MockD1TableColumn[] }>();
 
   log.debug("mockD1Database created", { db });
   /**
@@ -69,10 +69,11 @@ export function mockD1Database(): D1Database {
    * Preloads data into a table for testing (mock/test helper only).
    * @warning This is a mock/test-only API. Emits a warning if used outside test.
    * @param table - The table name.
+   * @param columns - The explicit table schema columns (required).
    * @param rows - The rows to inject.
    */
-  function inject(tableName: string, rows: Record<string, unknown>[]) {
-    mockInject(db, tableName, rows);
+  function inject(tableName: string, columns: import('./types/MockD1Database.js').MockD1TableColumn[], rows: Record<string, unknown>[]) {
+    mockInject(db, tableName, columns, rows);
   }
 
   /**
@@ -81,7 +82,7 @@ export function mockD1Database(): D1Database {
    * @returns An object mapping table names to their rows.
    */
   function dump(): Record<string, { rows: D1Row[] }> {
-    return mockDump(db);
+    return Object.fromEntries(db.entries());
   }
 
   return {

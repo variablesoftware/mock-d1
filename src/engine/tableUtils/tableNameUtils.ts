@@ -1,3 +1,5 @@
+import type { D1Row } from "../../types/MockD1Database";
+
 // Utility for D1-accurate table name extraction, normalization, and lookup
 // Handles quoted/unquoted/case-sensitive/SQL keyword table names
 
@@ -69,7 +71,7 @@ export function normalizeTableName(tableName: string): string {
  * Finds the actual table key in the db map for a given table name.
  * Returns the key if found, else undefined.
  */
-export function getTableKey(db: Map<string, any>, tableName: string): string | undefined {
+export function getTableKey(db: Map<string, D1Row | Record<string, unknown>>, tableName: string): string | undefined {
   // Try exact match (for quoted)
   if (db.has(tableName)) return tableName;
   // Try normalized (for unquoted)

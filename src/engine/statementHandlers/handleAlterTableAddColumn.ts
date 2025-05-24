@@ -1,57 +1,133 @@
-import { D1Row } from "../../types/MockD1Database";
-import { filterSchemaRow } from "../helpers.js";
+import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { filterSchemaRow } from "../../helpers/helpers.js";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
-import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
+import { findTableKey } from '../tableUtils/tableLookup.js';
 import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
+import { log } from "@variablesoftware/logface";
 
 /**
  * Handles ALTER TABLE <table> ADD COLUMN <col> statements (stub).
  */
 export function handleAlterTableAddColumn(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>
+  db: Map<string, D1TableData>
 ) {
+  log.debug("handleAlterTableAddColumn called", { sql });
   validateSqlOrThrow(sql);
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'ALTER');
   } catch (err) {
+    log.error("Malformed ALTER TABLE ADD COLUMN statement", { sql, err });
     throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
   }
-  const match = sql.match(/add column (\S+)(?:\s+(\w+))?/i);
-  if (!match) throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
-  const col = match[1];
-  const type = match[2];
+  // Parse column name and quoted status
+  // Accepts double quotes, backticks, or square brackets for quoted identifiers
+  const colMatch = sql.match(/add column\s+([`"[])(.+?)\1(?:\s+(\w+))?/i) || sql.match(/add column\s+(\w+)(?:\s+(\w+))?/i);
+  if (!colMatch) {
+    log.error("Malformed ALTER TABLE ADD COLUMN statement (regex)", { sql });
+    throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
+  }
+  let col: string, quoted: boolean;
+  if (colMatch[2]) {
+    col = colMatch[2];
+    quoted = true;
+  } else {
+    col = colMatch[1];
+    quoted = false;
+  }
+  const type = colMatch[3] || colMatch[2] && colMatch[3];
   const tableKey = findTableKey(db, tableName);
+  log.debug("handleAlterTableAddColumn tableKey", { tableName, tableKey });
+  log.debug("handleAlterTableAddColumn existence check", {
+    sql,
+    tableName,
+    tableKey,
+    dbKeys: Array.from(db.keys()),
+    tableExists: tableKey ? db.has(tableKey) : false,
+  });
   if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
   if (type && !/^(INTEGER|TEXT|REAL|BLOB)$/i.test(type)) {
+    log.error("Unsupported column type in ALTER TABLE ADD COLUMN", { type });
     throw new Error(`Unsupported column type: ${type}`);
   }
   const tableObj = db.get(tableKey);
-  if (!tableObj || !Array.isArray(tableObj.rows) || !tableObj.rows[0]) throw d1Error('TABLE_NOT_FOUND', tableName);
-  // Add column to schema row if present
-  if (tableObj.rows.length && Object.values(tableObj.rows[0]).every(v => typeof v === 'undefined')) {
-    const schemaRow = tableObj.rows[0];
-    if (!schemaRow) throw d1Error('TABLE_NOT_FOUND', tableName);
-    const colKey = findColumnKey(schemaRow, col);
-    if (!colKey) throw d1Error('COLUMN_NOT_FOUND', col);
-    if (!(Object.keys(schemaRow).some(k => k.toLowerCase() === colKey.toLowerCase()))) {
-      schemaRow[col] = undefined;
+  if (!tableObj || !Array.isArray(tableObj.rows) || !tableObj.rows[0]) {
+    log.error("Table not found or invalid rows in ALTER TABLE ADD COLUMN", { tableKey });
+    throw d1Error('TABLE_NOT_FOUND', tableName);
+  }
+  // Check for duplicate columns
+  const schemaRow = tableObj.columns;
+  const keys = Object.keys(schemaRow);
+  // Precompute sets for fast lookup
+  const unquotedKeySet = new Set(keys.filter(k => k === k.toLowerCase()).map(k => k.toLowerCase()));
+  const quotedKeySet = new Set(keys.filter(k => k !== k.toLowerCase()));
+  log.debug("handleAlterTableAddColumn table schemaRow keys before add", {
+    tableKey,
+    schemaKeys: keys,
+    schemaRow: { ...schemaRow },
+    quoted,
+    col,
+  });
+  if (quoted) {
+    // Only check for exact match among quoted columns
+    if (quotedKeySet.has(col)) {
+      log.error("Duplicate quoted column in ALTER TABLE ADD COLUMN", { tableKey, col, schemaKeys: keys });
+      throw d1Error('GENERIC', `Column already exists: ${col}`);
+    }
+  } else {
+    // Only check for case-insensitive match among unquoted columns
+    if (unquotedKeySet.has(col.toLowerCase())) {
+      log.error("Duplicate unquoted column in ALTER TABLE ADD COLUMN", { tableKey, col, schemaKeys: keys });
+      throw d1Error('GENERIC', `Column already exists: ${col}`);
     }
   }
-  // Add column to all data rows
+  // Add column to schema row
+  if (quoted) {
+    schemaRow[col] = null;
+  } else {
+    schemaRow[col.toLowerCase()] = null;
+  }
+  log.debug("handleAlterTableAddColumn table schemaRow keys after add", {
+    tableKey,
+    schemaKeys: Object.keys(schemaRow),
+    schemaRow: { ...schemaRow },
+    addedCol: quoted ? col : col.toLowerCase(),
+    quoted,
+  });
+  // Add column to all data rows (do not mutate key sets here)
+  let previewRow: D1Row | undefined;
+  let previewRowSet = false;
   for (const row of filterSchemaRow(tableObj.rows)) {
     if (!row) throw d1Error('TABLE_NOT_FOUND', tableName);
-    const colKey = findColumnKey(row, col);
-    if (!colKey) throw d1Error('COLUMN_NOT_FOUND', col);
-    if (!(Object.keys(row).some(k => k.toLowerCase() === colKey.toLowerCase()))) {
-      row[col] = undefined;
+    if (quoted) {
+      // Only add if not present (guard)
+      if (!Object.prototype.hasOwnProperty.call(row, col)) row[col] = null;
+    } else {
+      const colKey = col.toLowerCase();
+      if (!Object.prototype.hasOwnProperty.call(row, colKey)) {
+        row[colKey] = null;
+      }
     }
-    validateRowAgainstSchema(row, tableObj.rows[0]);
-    normalizeRowToSchema(row, tableObj.rows[0]);
+    // Only capture the first preview row for debug output
+    if (!previewRowSet) {
+      previewRow = { ...row };
+      previewRowSet = true;
+    }
+    // No per-row debug log
+    validateRowAgainstSchema(row, tableObj.columns);
+    normalizeRowToSchema(row, tableObj.columns);
   }
+  if (previewRowSet) {
+    log.debug("handleAlterTableAddColumn preview row after add", {
+      previewRow,
+      addedCol: quoted ? col : col.toLowerCase(),
+      quoted,
+    });
+  }
+  log.info("ALTER TABLE ADD COLUMN complete", { tableKey, col, schemaKeys: Object.keys(schemaRow), schemaRow: { ...schemaRow } });
   return {
     success: true,
     results: [],

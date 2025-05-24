@@ -1,5 +1,4 @@
 // src/engine/parseCreateTable.ts
-import { D1Row } from "../types/MockD1Database";
 
 /**
  * Parses a CREATE TABLE statement and validates columns.

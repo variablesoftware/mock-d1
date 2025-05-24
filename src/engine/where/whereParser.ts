@@ -46,7 +46,10 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
       break;
     }
   }
-  // ...existing code, but do not increment depth for AND/OR splits...
+  // Defensive: throw on empty or incomplete WHERE clause
+  if (!trimmed || /^\s*(AND|OR)?\s*$/i.test(trimmed)) {
+    throw d1Error('UNSUPPORTED_SQL', 'Malformed or incomplete WHERE clause');
+  }
   for (const op of UNSUPPORTED_OPERATORS) {
     const regex = new RegExp(`\\b${op.replace(/ /g, '\\s+')}\\b`, 'i');
     if (regex.test(trimmed)) {
@@ -55,18 +58,44 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
   }
   const andIdx = trimmed.toUpperCase().indexOf(' AND ');
   if (andIdx !== -1) {
+    // Defensive: both sides must be non-empty
+    const left = trimmed.slice(0, andIdx).trim();
+    const right = trimmed.slice(andIdx + 5).trim();
+    if (!left || !right) {
+      throw d1Error('UNSUPPORTED_SQL', 'Malformed WHERE clause: empty or incomplete condition');
+    }
     return {
       type: 'and',
-      left: parseWhereClause(trimmed.slice(0, andIdx), depth),
-      right: parseWhereClause(trimmed.slice(andIdx + 5), depth),
+      left: parseWhereClause(left, depth),
+      right: parseWhereClause(right, depth),
     };
   }
   const orIdx = trimmed.toUpperCase().indexOf(' OR ');
   if (orIdx !== -1) {
+    // Defensive: both sides must be non-empty
+    const left = trimmed.slice(0, orIdx).trim();
+    const right = trimmed.slice(orIdx + 4).trim();
+    if (!left || !right) {
+      throw d1Error('UNSUPPORTED_SQL', 'Malformed WHERE clause: empty or incomplete condition');
+    }
     return {
       type: 'or',
-      left: parseWhereClause(trimmed.slice(0, orIdx), depth),
-      right: parseWhereClause(trimmed.slice(orIdx + 4), depth),
+      left: parseWhereClause(left, depth),
+      right: parseWhereClause(right, depth),
+    };
+  }
+  // Defensive: catch WHERE clauses ending with an operator (e.g., 'a = 1 OR')
+  if (/\b(AND|OR)\s*$/i.test(trimmed)) {
+    throw d1Error('UNSUPPORTED_SQL', 'Malformed WHERE clause: ends with operator');
+  }
+  // Accept unquoted/quoted column names and numbers/strings/binds as values
+  const eq = trimmed.match(/^([`"\[]?\w+[`"\]]?)\s*=\s*(:[\w]+|'.*?'|".*?"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/i);
+  if (eq) {
+    return {
+      type: 'comparison',
+      column: eq[1],
+      operator: '=',
+      value: eq[2],
     };
   }
   const isNull = trimmed.match(/^([`"\[]?\w+[`"\]]?)\s+IS\s+(NOT\s+)?NULL$/i);
@@ -75,15 +104,6 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
       type: 'isNull',
       column: isNull[1],
       not: Boolean(isNull[2]),
-    };
-  }
-  const eq = trimmed.match(/^([`"\[]?\w+[`"\]]?)\s*=\s*(:\w+|'.*?'|".*?"|\d+)$/);
-  if (eq) {
-    return {
-      type: 'comparison',
-      column: eq[1],
-      operator: '=',
-      value: eq[2],
     };
   }
   throw d1Error('UNSUPPORTED_SQL', `Malformed or unsupported WHERE clause: ${where}`);

@@ -1,10 +1,10 @@
-import { D1Row } from "../../types/MockD1Database";
-import { filterSchemaRow } from "../helpers.js";
+import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/helpers.js";
 import { log } from "@variablesoftware/logface";
-import { evaluateWhereClause } from '../where/evaluateWhereClause.js';
+import { parseWhereClause, evaluateWhereAst } from '../where/index.js';
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
-import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
-import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
+import { findTableKey } from '../tableUtils/tableLookup.js';
+import { normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
 
@@ -20,11 +20,11 @@ import { validateSqlOrThrow } from '../sqlValidation.js';
  */
 export function handleUpdate(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>,
-  bindArgs: Record<string, unknown>
+  db: Map<string, D1TableData>,
+  bindArgs: Record<string, unknown> = {}
 ) {
   validateSqlOrThrow(sql);
-  log.debug("handleUpdate called", { sql, bindArgs });
+  log.debug("handleUpdate called", { sql, bindArgs: summarizeValue(bindArgs) });
   // Use shared utility for table name extraction and lookup
   const tableName = extractTableName(sql, 'UPDATE');
   const tableKey = findTableKey(db, tableName);
@@ -50,13 +50,15 @@ export function handleUpdate(
   let rowsRead = 0;
   // Skip schema row for updates: only update data rows, never the schema row
   const dataRows = tableObj ? filterSchemaRow(tableObj.rows) : [];
-  log.debug("handleUpdate dataRows (schema row skipped)", { dataRows });
+  log.debug("handleUpdate dataRows (schema row skipped)", { dataRows: dataRows.map(summarizeRow) });
 
   // Strict: only allow updates to columns defined in the schema row
-  const canonicalCols = tableObj && tableObj.rows[0] ? Object.keys(tableObj.rows[0]).map(k => k.toLowerCase()) : [];
+  const canonicalCols = tableObj && tableObj.columns ? Object.keys(tableObj.columns).map(k => k.toLowerCase()) : [];
   if (!canonicalCols.includes(setCol)) {
     throw d1Error('COLUMN_NOT_FOUND', setCol);
   }
+
+  const isDebug = process.env.DEBUG === '1';
 
   if (whereMatch && whereCol && whereBind) {
     // Accept bind arg names case-insensitively
@@ -67,32 +69,41 @@ export function handleUpdate(
     if (!whereBindKey) throw new Error(`Missing bind argument: ${whereBind}`);
     // Use canonical columns from schema row for column matching, normalized
     const matchResults = dataRows.map((row, i) => {
-      const normRow = normalizeRowToSchema(tableObj!.rows[0], row);
-      return { i, row, normRow, matches: evaluateWhereClause(`${whereCol} = :${whereBind}`, normRow, bindArgs) };
+      const normRow = normalizeRowToSchema(tableObj!.columns, row);
+      const whereAst = parseWhereClause(`${whereCol} = :${whereBind}`);
+      return { i, row, normRow, matches: evaluateWhereAst(whereAst, normRow, bindArgs) };
     });
-    log.debug("handleUpdate matchesWhere results", matchResults);
-    for (const row of dataRows) {
-      const normRow = normalizeRowToSchema(tableObj!.rows[0], row);
-      const rowKeys = Object.keys(row).map(k => k.toLowerCase());
-      const whereRowKey = canonicalCols.find(k => k === whereCol) || rowKeys.find(k => k === whereCol);
-      let setRowKey = canonicalCols.find(k => k === setCol) || rowKeys.find(k => k === setCol);
-      if (whereRowKey && setRowKey && evaluateWhereClause(`${whereCol} = :${whereBind}`, normRow, bindArgs)) {
-        if (setBindKey && row[setRowKey] !== bindArgs[setBindKey]) {
-          // Stringify JSON-serializable objects/arrays
-          let value = bindArgs[setBindKey];
-          if (typeof value === 'object' && value !== null) {
-            try {
-              value = JSON.stringify(value);
-            } catch {
-              log.error("Unsupported data type in update", { value });
-              throw new Error("Unsupported data type");
+    log.debug("handleUpdate matchesWhere results", matchResults.map(m => ({ ...m, row: summarizeRow(m.row), normRow: summarizeRow(m.normRow) })));
+    if (isDebug) log.debug("before mutation", { tableKey, rows: tableObj?.rows?.map(summarizeRow) });
+    try {
+      for (const row of dataRows) {
+        const normRow = normalizeRowToSchema(tableObj!.columns, row);
+        const rowKeys = Object.keys(row).map(k => k.toLowerCase());
+        const whereRowKey = canonicalCols.find(k => k === whereCol) || rowKeys.find(k => k === whereCol);
+        let setRowKey = canonicalCols.find(k => k === setCol) || rowKeys.find(k => k === setCol);
+        const whereAst = parseWhereClause(`${whereCol} = :${whereBind}`);
+        if (whereRowKey && setRowKey && evaluateWhereAst(whereAst, normRow, bindArgs)) {
+          if (setBindKey && row[setRowKey] !== bindArgs[setBindKey]) {
+            // Stringify JSON-serializable objects/arrays
+            let value = bindArgs[setBindKey];
+            if (typeof value === 'object' && value !== null) {
+              try {
+                value = JSON.stringify(value);
+              } catch {
+                log.error("Unsupported data type in update", { value: summarizeValue(value) });
+                throw new Error("Unsupported data type");
+              }
             }
+            row[setRowKey] = value;
+            changes++;
           }
-          row[setRowKey] = value;
-          changes++;
+          rowsRead++;
         }
-        rowsRead++;
       }
+      if (isDebug) log.debug("after mutation", { tableKey, rows: tableObj?.rows?.map(summarizeRow) });
+    } catch (err) {
+      log.error("mutation error", { tableKey, rows: tableObj?.rows?.map(summarizeRow), bindArgs: summarizeValue(bindArgs), error: err });
+      throw err;
     }
   } else {
     // No WHERE: update all data rows
@@ -106,34 +117,41 @@ export function handleUpdate(
         row[setCol] = undefined;
       }
     }
-    // --- Now update all data rows ---
-    for (const [i, row] of dataRows.entries()) {
-      // Normalize row keys for case-insensitive matching
-      const rowKeyMap = Object.fromEntries(Object.keys(row).map(k => [k.toLowerCase(), k]));
-      let setRowKey = rowKeyMap[setCol] || setCol;
-      // Always set the value for all data rows (not just if oldValue !== newValue)
-      if (setBindKey) {
-        let value = bindArgs[setBindKey];
-        if (typeof value === 'object' && value !== null) {
-          try {
-            value = JSON.stringify(value);
-          } catch {
-            log.error("Unsupported data type in update", { value });
-            throw new Error("Unsupported data type");
+    if (isDebug) log.debug("before mutation", { tableKey, rows: tableObj?.rows?.map(summarizeRow) });
+    try {
+      // --- Now update all data rows ---
+      for (const [i, row] of dataRows.entries()) {
+        // Normalize row keys for case-insensitive matching
+        const rowKeyMap = Object.fromEntries(Object.keys(row).map(k => [k.toLowerCase(), k]));
+        let setRowKey = rowKeyMap[setCol] || setCol;
+        // Always set the value for all data rows (not just if oldValue !== newValue)
+        if (setBindKey) {
+          let value = bindArgs[setBindKey];
+          if (typeof value === 'object' && value !== null) {
+            try {
+              value = JSON.stringify(value);
+            } catch {
+              log.error("Unsupported data type in update", { value: summarizeValue(value) });
+              throw new Error("Unsupported data type");
+            }
           }
+          row[setRowKey] = value;
+          changes++;
+          log.debug("handleUpdate updated row", { rowIndex: i, setRowKey, newValue: summarizeValue(value) });
+        } else {
+          log.debug("handleUpdate skipped row (no bind value)", { rowIndex: i, setRowKey });
         }
-        row[setRowKey] = value;
-        changes++;
-        log.debug("handleUpdate updated row", { rowIndex: i, setRowKey, newValue: value });
-      } else {
-        log.debug("handleUpdate skipped row (no bind value)", { rowIndex: i, setRowKey });
+        rowsRead++;
       }
-      rowsRead++;
+      if (isDebug) log.debug("after mutation", { tableKey, rows: tableObj?.rows?.map(summarizeRow) });
+    } catch (err) {
+      log.error("mutation error", { tableKey, rows: tableObj?.rows?.map(summarizeRow), bindArgs: summarizeValue(bindArgs), error: err });
+      throw err;
     }
   }
 
-  log.debug("handleUpdate final table rows (normalized)", { tableKey, tableObj: tableObj?.rows });
-  log.info("handleUpdate: update complete", { tableKey, changes });
+  log.debug("handleUpdate final table rows (normalized)", { tableKey, tableObj: tableObj?.rows?.map(summarizeRow) });
+  log.info("update complete", { tableKey, changes });
   return {
     success: true,
     results: [],

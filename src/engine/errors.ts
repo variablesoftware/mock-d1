@@ -18,7 +18,9 @@ export const D1_ERRORS = {
   MALFORMED_ALTER: 'Malformed ALTER TABLE statement',
   UNSUPPORTED_SQL: 'Unsupported SQL syntax',
   UNSUPPORTED_TYPE: 'Unsupported data type',
-  MISSING_BIND: 'Missing bind parameter',
+  MISSING_BIND: 'Missing bind argument', // Alias for compatibility
+  MISSING_BIND_ARGUMENT: 'Missing bind argument',
+  MISSING_BIND_PARAMETER: 'Missing bind argument',
   EXTRA_COLUMNS: 'Attempted to insert with columns not present in schema',
   EMPTY_SCHEMA: 'Cannot inject: schema row is empty',
   MULTI_STATEMENT: 'Multiple SQL statements in one string are not allowed',

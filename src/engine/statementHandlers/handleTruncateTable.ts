@@ -1,4 +1,4 @@
-import { D1Row } from "../../types/MockD1Database";
+import { D1Row, D1TableData } from "../../types/MockD1Database";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { log } from "@variablesoftware/logface";
 import { findTableKey } from '../tableUtils/tableLookup.js';
@@ -10,14 +10,14 @@ import { validateSqlOrThrow } from '../sqlValidation.js';
  */
 export function handleTruncateTable(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>
+  db: Map<string, D1TableData>
 ) {
   validateSqlOrThrow(sql);
   log.debug("handleTruncateTable called", { sql });
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'TRUNCATE');
-  } catch (err) {
+  } catch {
     throw new Error("Malformed TRUNCATE TABLE statement.");
   }
   const tableKey = findTableKey(db, tableName);
@@ -27,7 +27,11 @@ export function handleTruncateTable(
     throw d1Error('TABLE_NOT_FOUND', tableName);
   }
   // Always remove all rows, including schema row, on TRUNCATE
-  db.set(tableKey, { rows: [] });
+  const tableData = db.get(tableKey);
+  if (tableData) {
+    tableData.columns = [];
+    tableData.rows = [];
+  }
   log.info("Table truncated", { tableKey });
   return {
     success: true,

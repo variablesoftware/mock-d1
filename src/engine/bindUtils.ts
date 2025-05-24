@@ -2,7 +2,7 @@
  * @file engine/bindUtils.ts
  * @description Centralized bind parameter validation for D1 mock.
  */
-import { d1Error, D1_ERRORS } from './errors.js';
+import { d1Error } from './errors.js';
 
 /**
  * Validates that all required bind parameters are present in the args object.

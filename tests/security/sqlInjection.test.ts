@@ -10,6 +10,8 @@
  *
  * All tests use a fresh in-memory Map as the backing store for the mock database.
  * The mock engine is expected to throw for any SQL that is malformed or potentially unsafe.
+ *
+ * (All tests have been split into individual files: sqlInjection.bindvalues.test.ts, sqlInjection.multistatement.test.ts, sqlInjection.malformed.test.ts)
  */
 
 // Security: SQL injection and malformed SQL tests for mockD1Database
@@ -34,11 +36,15 @@ describe("SQL Injection and Malformed SQL", () => {
 
   it("should throw on malformed SQL", async () => {
     const db = new Map();
-    // Ensure the table exists so only SQL syntax is tested
+    // Malformed CREATE TABLE: should NOT throw (SQLite allows no columns)
+    await expect(
+      createPreparedStatement("CREATE TABLE empty_table ()", db).run()
+    ).resolves.toBeDefined();
+    // Now create the table so SELECTs do not throw "table does not exist"
     await createPreparedStatement("CREATE TABLE users (id INTEGER, name TEXT)", db).run();
-    // This statement is incomplete but currently returns an empty result (does not throw)
-    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db).run()).resolves.toBeDefined();
-    await expect(createPreparedStatement("SELECT * FROM users WHERE ", db).run()).rejects.toThrow();
+    // This statement is incomplete and should throw
+    await expect(createPreparedStatement("SELECT * FROM users WHERE name = 'a' OR", db).run()).rejects.toThrow();
+    await expect(createPreparedStatement("SELECT * FROM users WHERE ", db).run()).rejects.toThrow(/Malformed|Table does not exist/);
     // Strict D1: should throw on missing bind argument
     await expect(createPreparedStatement("INSERT INTO users (id) VALUES (:id)", db).run()).rejects.toThrow("Missing bind argument");
   });

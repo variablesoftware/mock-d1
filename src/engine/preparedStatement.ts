@@ -5,6 +5,7 @@
  */
 
 import { D1Row, MockD1PreparedStatement } from "../types/MockD1Database";
+import type { D1TableData } from "../types/MockD1Database";
 import { handleUpdate } from "./statementHandlers/handleUpdate.js";
 import { handleInsert } from "./statementHandlers/handleInsert.js";
 import { handleSelect } from "./statementHandlers/handleSelect.js";
@@ -17,17 +18,10 @@ import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableA
 import { handleAlterTableDropColumn } from './statementHandlers/handleAlterTableDropColumn.js';
 import { log } from "@variablesoftware/logface";
 import { validateSqlOrThrow } from './sqlValidation.js';
+import { d1Error, D1_ERRORS } from './errors.js';
 // log import removed (was unused)
 // validateSQLSyntax import removed (was unused)
-
-interface Logger {
-  debug: (..._args: unknown[]) => void;
-  info: (..._args: unknown[]) => void;
-  warn: (..._args: unknown[]) => void;
-  error: (..._args: unknown[]) => void;
-  log: (..._args: unknown[]) => void;
-  options?: (_options: Record<string, unknown>) => Logger;
-}
+// Removed unused 'Logger' interface
 
 /**
  * Creates a mock prepared statement for the given SQL and database state.
@@ -39,7 +33,7 @@ interface Logger {
  */
 export function createPreparedStatement(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>
+  db: Map<string, D1TableData>
 ): MockD1PreparedStatement {
   // log.debug('Preparing statement: %s', sql);
   // Reject multiple SQL statements in one string
@@ -55,37 +49,39 @@ export function createPreparedStatement(
     throw new Error("Unsupported SQL syntax in mockD1Database: LIKE, BETWEEN, JOIN not implemented.");
   }
 
-  // Centralized SQL validation
-  validateSqlOrThrow(sql);
+  // Only validate for unsupported SQL, not malformed SQL (malformed errors must be thrown at run-time)
+  validateSqlOrThrow(sql, { skipMalformed: true });
 
   const upperSql = sql.trim().toUpperCase();
   // Accept SQL keywords as table/column names by relaxing regexes
   if (upperSql.startsWith("CREATE TABLE")) {
-    // CREATE TABLE <name> (<columns>) must have at least one column
-    // Match: CREATE TABLE <name> ( ... )
+    // CREATE TABLE <name> (<columns>)
     const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
     if (match) {
-      const columns = match[1].trim();
-      // If columns is empty or only whitespace, throw
-      if (!columns || /^\s*$/.test(columns)) {
-        throw new Error("Syntax error: CREATE TABLE must define at least one column");
-      }
+      // SQLite allows CREATE TABLE t () (no columns)
+      // Do not throw if columns is empty or only whitespace
+      // (previously: if (!columns || /^\s*$/.test(columns)) throw ...)
     }
   }
   if (upperSql.startsWith("SELECT")) {
     // SELECT must have at least: SELECT <columns> FROM <table>
     if (!/^SELECT\s+.+\s+FROM\s+\S+/i.test(sql)) {
-      throw new Error("Malformed SELECT statement");
+      throw d1Error('MALFORMED_SELECT');
     }
   } else if (upperSql.startsWith("INSERT")) {
     // INSERT must have: INSERT INTO <table> (<cols>) VALUES (<vals>)
     if (!/^INSERT INTO \S+ \(.*\) VALUES \(.*\)/i.test(sql)) {
-      throw new Error("Malformed INSERT statement");
+      throw d1Error('MALFORMED_INSERT');
     }
   } else if (upperSql.startsWith("DELETE")) {
     // DELETE must have: DELETE FROM <table>
     if (!/^DELETE FROM \S+/i.test(sql)) {
-      throw new Error("Malformed DELETE statement");
+      throw d1Error('MALFORMED_DELETE');
+    }
+  } else if (upperSql.startsWith("UPDATE")) {
+    // UPDATE must have: UPDATE <table> SET <col> = <val>
+    if (!/^UPDATE\s+\S+\s+SET\s+.+/i.test(sql)) {
+      throw d1Error('MALFORMED_UPDATE');
     }
   }
 
@@ -173,17 +169,29 @@ export function createPreparedStatement(
      * Executes the statement and returns the result.
      * @returns The result of the statement execution.
      */
-    async run(_args?: unknown) { return parseAndRun("run"); },
+    async run(_args?: unknown) {
+      const result = parseAndRun("run");
+      if (!result) throw new Error("Handler did not return a result object");
+      return result;
+    },
     /**
      * Executes the statement and returns all matching results.
      * @returns The result of the statement execution.
      */
-    async all(_args?: unknown) { return parseAndRun("all"); },
+    async all(_args?: unknown) {
+      const result = parseAndRun("all");
+      if (!result) throw new Error("Handler did not return a result object");
+      return result;
+    },
     /**
      * Executes the statement and returns the first matching result.
      * @returns The result of the statement execution.
      */
-    async first(_args?: unknown) { return parseAndRun("first"); },
+    async first(_args?: unknown) {
+      const result = parseAndRun("first");
+      if (!result) throw new Error("Handler did not return a result object");
+      return result;
+    },
     /**
      * Executes the statement and returns the raw result array.
      * 

@@ -5,6 +5,7 @@
  */
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
+import { log } from "@variablesoftware/logface";
 
 /**
  * Throws a D1-like error for unsupported ALTER TABLE ... DROP COLUMN ... statements.
@@ -12,8 +13,10 @@ import { validateSqlOrThrow } from '../sqlValidation.js';
  */
 export function handleAlterTableDropColumn(
   sql?: string,
-  db?: Map<string, { rows: unknown[] }>
+  _db?: Map<string, { rows: unknown[] }>
 ) {
+  log.debug("handleAlterTableDropColumn called", { sql });
   if (sql) validateSqlOrThrow(sql);
+  log.error("ALTER TABLE DROP COLUMN is not supported", { sql });
   throw d1Error('UNSUPPORTED_SQL', 'ALTER TABLE ... DROP COLUMN is not supported by Cloudflare D1');
 }

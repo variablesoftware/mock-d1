@@ -68,10 +68,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cloudflare/workers-types@npm:^4.20250521.0":
-  version: 4.20250521.0
-  resolution: "@cloudflare/workers-types@npm:4.20250521.0"
-  checksum: 10c0/69465fd3486ade8267183b477b621264cc65250f7e307c9247187bd6ccb217f277ba8c2c565ff9be00838d684fa08bc21d8874ff2c11adff6136401ef997d866
+"@cloudflare/workers-types@npm:^4.20250524.0":
+  version: 4.20250524.0
+  resolution: "@cloudflare/workers-types@npm:4.20250524.0"
+  checksum: 10c0/81dff31c4611ebee0e0f96df666c5caf5de72dd566536a2124eaf4290587e8d995c0c6af8fe9f457a3b55e3ec2787ebd5f9a4f2cbf56391359fda96f2daa7073
   languageName: node
   linkType: hard
 
@@ -1370,10 +1370,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@variablesoftware/logface@npm:^0.2.5":
-  version: 0.2.8
-  resolution: "@variablesoftware/logface@npm:0.2.8"
-  checksum: 10c0/687ed5c81ebbdf295637ad6086ba082b64b219babb6f31a90c75bb0abd109a36f46460bfff47ba3191d9041113ab1edb1d4616520e676eeab695f28e831d550e
+"@variablesoftware/logface@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@variablesoftware/logface@npm:0.3.0"
+  checksum: 10c0/30e55fc730ca8644cd1277e01dd3c72b88622196c2bf85b6aca9a48d46f2547be48f5d1ccfff4af70836d1eba8082a418390939713b6a8bef42b2d8da9e85dce
   languageName: node
   linkType: hard
 
@@ -1381,7 +1381,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@variablesoftware/mock-d1@workspace:."
   dependencies:
-    "@cloudflare/workers-types": "npm:^4.20250521.0"
+    "@cloudflare/workers-types": "npm:^4.20250524.0"
     "@eslint/js": "npm:^9.27.0"
     "@semantic-release/changelog": "npm:^6.0.3"
     "@semantic-release/commit-analyzer": "npm:^13.0.1"
@@ -1392,19 +1392,19 @@ __metadata:
     "@types/node": "npm:^22.15.21"
     "@typescript-eslint/eslint-plugin": "npm:^8.32.1"
     "@typescript-eslint/parser": "npm:^8.32.1"
-    "@variablesoftware/logface": "npm:^0.2.5"
+    "@variablesoftware/logface": "npm:^0.3.0"
     "@vitest/coverage-v8": "npm:^3.1.4"
     eslint: "npm:^9.27.0"
     eslint-config-prettier: "npm:^10.1.5"
     fast-check: "npm:^4.1.1"
     husky: "npm:^9.1.7"
     prettier: "npm:^3.5.3"
-    semantic-release: "npm:^24.2.4"
+    semantic-release: "npm:^24.2.5"
     terser: "npm:^5.39.2"
     tslib: "npm:^2.8.1"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.1.4"
-    zod: "npm:^3.25.17"
+    zod: "npm:^3.25.28"
   languageName: unknown
   linkType: soft
 
@@ -3844,7 +3844,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked-terminal@npm:^7.0.0":
+"marked-terminal@npm:^7.3.0":
   version: 7.3.0
   resolution: "marked-terminal@npm:7.3.0"
   dependencies:
@@ -5140,9 +5140,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semantic-release@npm:^24.2.4":
-  version: 24.2.4
-  resolution: "semantic-release@npm:24.2.4"
+"semantic-release@npm:^24.2.5":
+  version: 24.2.5
+  resolution: "semantic-release@npm:24.2.5"
   dependencies:
     "@semantic-release/commit-analyzer": "npm:^13.0.0-beta.1"
     "@semantic-release/error": "npm:^4.0.0"
@@ -5163,7 +5163,7 @@ __metadata:
     import-from-esm: "npm:^2.0.0"
     lodash-es: "npm:^4.17.21"
     marked: "npm:^15.0.0"
-    marked-terminal: "npm:^7.0.0"
+    marked-terminal: "npm:^7.3.0"
     micromatch: "npm:^4.0.2"
     p-each-series: "npm:^3.0.0"
     p-reduce: "npm:^3.0.0"
@@ -5175,7 +5175,7 @@ __metadata:
     yargs: "npm:^17.5.1"
   bin:
     semantic-release: bin/semantic-release.js
-  checksum: 10c0/cd7b9da57c7538319b55a3854e3c3d451063ec2b8e362ab9c5ad07bdbd91cfb88c332c513cae0ab3c31264e883004032b02953baec3b8163a923eaf36c9ef3e7
+  checksum: 10c0/2b8d09c0bba73b01be18a10c9bea733cf79be18cc266009c898b530d240b91d92dba3aef0ee8e2e08413cd4fa75c79e10c56cbf604f2aecfcf4de962b52412de
   languageName: node
   linkType: hard
 
@@ -6253,9 +6253,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.17":
-  version: 3.25.17
-  resolution: "zod@npm:3.25.17"
-  checksum: 10c0/c330707d3e11c6e9ff9ab08d03b38612f8e6ee64b3fc5df003bada1c194f60f5aaffd67d727c73935c8c5507190d5de7b97c52f49b4798cd920ff7cba1a9961c
+"zod@npm:^3.25.28":
+  version: 3.25.28
+  resolution: "zod@npm:3.25.28"
+  checksum: 10c0/557fb621813d128f8090c43de65f9e8661ce9bd8bd29d7adc6b38b0a79e14729a8926e28a2e6eee2fa0ec0ea390cc549363f50235e8f45d2e4771906d1f87b20
   languageName: node
   linkType: hard

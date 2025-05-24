@@ -1,26 +1,35 @@
+import type { D1TableData } from "../../types/MockD1Database";
 import { D1Row } from "../../types/MockD1Database";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { findTableKey } from '../tableUtils/tableLookup.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
+import { log } from "@variablesoftware/logface";
 
 /**
  * Handles DROP TABLE <table> statements.
  */
 export function handleDropTable(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>
+  db: Map<string, D1TableData>
 ) {
+  log.debug("handleDropTable called", { sql });
   validateSqlOrThrow(sql);
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'DROP');
   } catch (err) {
+    log.error("Malformed DROP TABLE statement", { sql, err });
     throw new Error("Malformed DROP TABLE statement.");
   }
   const tableKey = findTableKey(db, tableName);
-  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
+  log.debug("handleDropTable tableKey", { tableName, tableKey });
+  if (!tableKey) {
+    log.error("Table not found for DROP TABLE", { tableName });
+    throw d1Error('TABLE_NOT_FOUND', tableName);
+  }
   db.delete(tableKey);
+  log.info("Table dropped", { tableKey });
   return {
     success: true,
     results: [],

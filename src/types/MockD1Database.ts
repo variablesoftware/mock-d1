@@ -43,6 +43,15 @@ export interface FakeD1Result<T = unknown> {
 }
 
 /**
+ * Represents a table in the mock D1 database.
+ * Separates schema (columns) from data (rows).
+ */
+export interface D1TableData {
+  columns: MockD1TableColumn[];
+  rows: D1Row[];
+}
+
+/**
  * Represents a prepared statement in the mock D1 database.
  */
 export interface MockD1PreparedStatement {
@@ -85,5 +94,11 @@ export interface D1Database {
   prepare(_sql: string): MockD1PreparedStatement;
   batch<T = unknown>(_statements: MockD1PreparedStatement[]): Promise<FakeD1Result<T>[]>;
   dump(): Record<string, { rows: D1Row[] }>;
-  inject(_table: string, _rows: D1Row[]): void;
+  inject(_table: string, _columns: MockD1TableColumn[], _rows: D1Row[]): void;
 }
+
+export type MockD1TableColumn = {
+  original: string;
+  name: string;
+  quoted: boolean;
+};

@@ -1,12 +1,12 @@
 import { D1Row } from "../../types/MockD1Database";
 import { z, RefinementCtx } from "zod";
-import { findTableKey, filterSchemaRow } from "../helpers.js";
+import { findTableKey, filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/helpers.js";
 import { log } from "@variablesoftware/logface";
-import { extractTableName, normalizeTableName, getTableKey } from '../tableUtils/tableNameUtils.js';
-import { findTableKey, findColumnKey } from '../tableUtils/tableLookup.js';
+import { extractTableName, normalizeTableName } from '../tableUtils/tableNameUtils.js';
 import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
+import type { D1TableData } from "../../types/MockD1Database";
 
 // Accept any JSON-serializable value except function, symbol, bigint, undefined
 const bindArgsSchema = z.record(z.string(), z.any()).superRefine((args: Record<string, unknown>, ctx: RefinementCtx) => {
@@ -50,123 +50,189 @@ const bindArgsSchema = z.record(z.string(), z.any()).superRefine((args: Record<s
  */
 export function handleInsert(
   sql: string,
-  db: Map<string, { rows: D1Row[] }>,
+  db: Map<string, D1TableData>,
   bindArgs: Record<string, unknown> = {} // Default to an empty object
 ) {
+  // Validate SQL (including malformed) at run-time
   validateSqlOrThrow(sql);
-  log.debug("called", { sql, bindArgs });
+
+  // Only log debug info if not in stress mode
+  const isStress = process.env.D1_STRESS === '1';
+  const isDebug = process.env.DEBUG === '1';
+  if (!isStress || isDebug) {
+    log.debug("called", { sql, bindArgs: summarizeValue(bindArgs) });
+  }
 
   // Validate bind arguments
   try {
     bindArgsSchema.parse(bindArgs);
   } catch (e) {
-    log.error("bindArgs validation failed", { bindArgs, error: e });
+    log.error("bindArgs validation failed", { bindArgs: summarizeValue(bindArgs), error: e });
     throw new Error("Unsupported data type");
   }
 
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'INSERT');
-  } catch (err) {
+  } catch {
     throw new Error("Malformed INSERT statement");
   }
   let tableKey = findTableKey(db, tableName);
-  if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
-  const colMatch = sql.match(/\(([^)]+)\)/);
-  const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
-
-  if (!colMatch || !valuesMatch) {
-    log.error("malformed INSERT", { sql });
-    throw new Error("Malformed INSERT statement");
-  }
-  if (sql.indexOf(colMatch[0]) > sql.indexOf(valuesMatch[0])) {
-    log.error("malformed INSERT: columns after values", { sql });
-    throw new Error("Malformed INSERT statement");
-  }
+  let tableData = tableKey ? db.get(tableKey) : undefined;
 
   // If table does not exist, auto-create with D1-accurate key logic
-  if (!tableKey) {
+  if (!tableKey || !tableData) {
+    const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
+    const columns = colMatch && colMatch[3]
+      ? colMatch[3].split(",").map(s => {
+          const trimmed = s.trim();
+          const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+          if (quotedMatch) {
+            return { name: quotedMatch[2], quoted: true };
+          } else {
+            return { name: trimmed, quoted: false };
+          }
+        }).filter(c => c.name)
+      : [];
     const newTableKey = normalizeTableName(tableName);
-    log.debug("auto-creating table", { tableName, newTableKey });
-    const schemaRow: Record<string, unknown> = {};
-    const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
-    for (const col of columns) schemaRow[col] = undefined;
-    db.set(newTableKey, { rows: [schemaRow] });
+    db.set(newTableKey, { columns, rows: [] });
     tableKey = newTableKey;
+    tableData = db.get(tableKey);
+    if (!isStress) {
+      log.debug("auto-creating table", { tableName, newTableKey, columns });
+    }
   }
-  const tableData = db.get(tableKey);
-  if (!tableData) {
-    log.error("missing tableData after lookup", { tableKey });
-    throw new Error(`Table '${tableName}' does not exist in the database.`);
-  }
-  log.debug("normalized table name", { raw: tableName });
-  log.debug("tableKey", { tableName, tableKey });
+  if (!tableData) throw d1Error('TABLE_NOT_FOUND', tableName);
 
-  // Normalize columns to lower-case for all lookups and assignments
-  const columns = colMatch[1].split(",").map(s => s.trim().replace(/^[`"\[]?(.*?)[`"\]]?$/, "$1").toLowerCase());
-  const values = valuesMatch[1].split(",").map(s => s.trim());
-
-  if (columns.length !== values.length) {
-    log.error("column/value count mismatch", { columns, values });
-    throw new Error("INSERT column/value count mismatch.");
+  // Parse columns and values from SQL
+  const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
+  const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
+  if (!colMatch || !valuesMatch) {
+    if (isDebug) log.error("malformed INSERT", { sql });
+    throw d1Error('MALFORMED_INSERT');
   }
+  if (sql.indexOf(colMatch[0]) > sql.indexOf(valuesMatch[0])) {
+    if (isDebug) log.error("malformed INSERT: columns after values", { sql });
+    throw d1Error('MALFORMED_INSERT');
+  }
+  const columns = tableData.columns;
+  const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
 
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names
   const bindKeys = Object.keys(bindArgs);
-  // Build row using only bind values (strict D1: do not fallback to literals)
-  const row: Record<string, unknown> = {};
+  const normBindArgs = Object.fromEntries(bindKeys.map(k => [k.toLowerCase(), bindArgs[k]]));
+
+  // Check for missing bind arguments before proceeding, and also check for malformed value expressions
+  for (let i = 0; i < values.length; i++) {
+    const valueExpr = values[i];
+    const bindMatch = valueExpr.match(/^:(.+)$/);
+    if (!bindMatch) {
+      if (isDebug) log.error("Non-bind value in VALUES clause (not supported)", { valueExpr, sql });
+      throw d1Error('MALFORMED_INSERT');
+    }
+    const bindName = bindMatch[1].toLowerCase();
+    if (!(bindName in normBindArgs)) {
+      if (isDebug) log.error("Missing bind argument (diagnostic)", {
+        col: columns[i] ? columns[i].name : undefined,
+        columns,
+        bindKeys,
+        normBindArgsKeys: Object.keys(normBindArgs),
+        schemaKeys: columns.map(c => c.name),
+        sql,
+        bindArgs: summarizeValue(bindArgs),
+        normBindArgs,
+        bindName,
+        valueExpr,
+      });
+      throw d1Error('MISSING_BIND', columns[i] ? columns[i].name : bindName);
+    }
+  }
+
+  // Enforce column name uniqueness (quoted/unquoted rules)
+  const seenUnquoted = new Set<string>();
+  const seenQuoted = new Set<string>();
+  for (const col of columns) {
+    if (col.quoted) {
+      if (seenQuoted.has(col.name)) {
+        log.error("Duplicate quoted column name in INSERT", { columns });
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenQuoted.add(col.name);
+    } else {
+      const lower = col.name.toLowerCase();
+      if (seenUnquoted.has(lower)) {
+        log.error("Duplicate unquoted column name in INSERT", { columns });
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenUnquoted.add(lower);
+    }
+  }
+  if (columns.length !== values.length || columns.length === 0) {
+    log.error("column/value count mismatch", { columns, values });
+    throw d1Error('MALFORMED_INSERT');
+  }
+
+  // Build row using bind parameter names from VALUES clause
+  const row: Record<string, unknown> = Object.create(null);
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
-    // Find bind key case-insensitively
-    const bindKey = bindKeys.find(k => k.toLowerCase() === col);
-    if (!bindKey) {
-      throw new Error(`Missing bind argument: ${col}`);
+    const valueExpr = values[i];
+    const bindMatch = valueExpr.match(/^:(.+)$/);
+    if (!bindMatch) {
+      log.error("Non-bind value in VALUES clause (not supported)", { valueExpr, sql });
+      throw d1Error('MALFORMED_INSERT');
     }
-    let value = bindArgs[bindKey];
-    // Only allow primitives/null/undefined, or plain objects/arrays (JSON-serializable)
+    const bindName = bindMatch[1].toLowerCase();
+    let value = normBindArgs[bindName];
     if (typeof value === 'object' && value !== null) {
-      // Only allow plain objects or arrays
       if (Object.getPrototypeOf(value) !== Object.prototype && !Array.isArray(value)) {
-        log.error("unsupported object type", { value });
+        log.error("unsupported object type", { value: summarizeValue(value) });
         throw new Error("Unsupported data type");
       }
       try {
         value = JSON.stringify(value);
       } catch (err) {
-        log.error("JSON.stringify failed", { value, err });
+        log.error("JSON.stringify failed", { value: summarizeValue(value), err });
         throw new Error("Unsupported data type");
       }
     }
-    row[col] = value;
-    log.debug("assigned value", { col, value });
+    row[col.quoted ? col.name : col.name.toLowerCase()] = value;
+    if (!isStress) {
+      log.debug("assigned value", { col: col.name, value: summarizeValue(value) });
+    }
   }
 
-  // Get canonical columns from the first row (set by CREATE TABLE), normalize to lower-case
-  const canonicalCols = tableData.rows[0] ? Object.keys(tableData.rows[0]).map(k => k.toLowerCase()) : columns;
-  // Strict: do not patch schema row with new columns
-  if (canonicalCols.length !== columns.length || !columns.every(col => canonicalCols.includes(col))) {
-    throw new Error("Attempted to insert with columns not present in schema");
+  // Guard: do not insert a row if all values are undefined
+  const allUndefined = columns.every(col => row[col.quoted ? col.name : col.name.toLowerCase()] === undefined);
+  if (allUndefined) {
+    log.warn("Skipping insert of all-undefined row", { tableKey, row });
+    return {
+      success: false,
+      results: [],
+      meta: {
+        duration: 0,
+        size_after: tableData.rows.length,
+        rows_read: 0,
+        rows_written: 0,
+        last_row_id: tableData.rows.length,
+        changed_db: false,
+        changes: 0,
+      },
+    };
   }
 
-  // Validate and normalize row against schema
-  validateRowAgainstSchema(tableData.rows[0], row);
-  const normalizedRow = normalizeRowToSchema(tableData.rows[0], row);
+  tableData.rows.push(row);
 
-  log.debug("inserting normalizedRow (normalized)", { normalizedRow, tableKey });
-  if (tableData.rows.length && Object.values(tableData.rows[0]).every(v => typeof v === 'undefined')) {
-    tableData.rows.splice(1, 0, normalizedRow);
-  } else {
-    tableData.rows.push(normalizedRow);
+  if (!isStress) {
+    log.debug("final table rows", { tableKey, rowCount: tableData.rows.length });
+    log.info("row inserted", { tableKey, rowCount: tableData.rows.length });
   }
-
-  log.debug("final table rows", { tableKey, rows: tableData.rows });
-  log.info("handleInsert: row inserted", { tableKey, rowCount: tableData.rows.length });
   return {
     success: true,
     results: [],
     meta: {
       duration: 0,
-      size_after: filterSchemaRow(tableData.rows).length,
+      size_after: tableData.rows.length,
       rows_read: 0,
       rows_written: 1,
       last_row_id: tableData.rows.length,
