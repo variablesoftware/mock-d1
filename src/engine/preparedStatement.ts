@@ -232,13 +232,11 @@ export function createPreparedStatement(
       const result = parseAndRun("run");
       log.debug('[run] result', { result });
       if (result && result.success === false) {
-        // Type guard for error property with message
         const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
         if (errorObj) {
           log.debug('[run] result.error', { error: errorObj });
           log.debug('[run] result.error.message', { message: errorObj.message });
         }
-        // Robustly detect missing bind argument even if error is not set
         const isMissingBind =
           (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
           (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
@@ -257,21 +255,21 @@ export function createPreparedStatement(
      */
     async all(_args?: unknown) {
       const result = parseAndRun("all");
-      log.debug('[preparedStatement.all] result', { result });
+      log.debug('[all] result', { result });
       if (result && result.success === false) {
         const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
         if (errorObj) {
-          log.debug('[preparedStatement.all] result.error', { error: errorObj });
-          log.debug('[preparedStatement.all] result.error.message', { message: errorObj.message });
+          log.debug('[all] result.error', { error: errorObj });
+          log.debug('[all] result.error.message', { message: errorObj.message });
         }
         const isMissingBind =
           (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
           (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
         if (isMissingBind) {
-          log.debug('[preparedStatement.all] throwing MISSING_BIND');
+          log.debug('[all] throwing MISSING_BIND');
           throw d1Error('MISSING_BIND');
         }
-        log.debug('[preparedStatement.all] throwing UNSUPPORTED_SQL');
+        log.debug('[all] throwing UNSUPPORTED_SQL');
         throw d1Error('UNSUPPORTED_SQL');
       }
       return result;
@@ -282,21 +280,21 @@ export function createPreparedStatement(
      */
     async first(_args?: unknown) {
       const result = parseAndRun("first");
-      log.debug('[preparedStatement.first] result', { result });
+      log.debug('[first] result', { result });
       if (result && result.success === false) {
         const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
         if (errorObj) {
-          log.debug('[preparedStatement.first] result.error', { error: errorObj });
-          log.debug('[preparedStatement.first] result.error.message', { message: errorObj.message });
+          log.debug('[first] result.error', { error: errorObj });
+          log.debug('[first] result.error.message', { message: errorObj.message });
         }
         const isMissingBind =
           (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
           (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
         if (isMissingBind) {
-          log.debug('[preparedStatement.first] throwing MISSING_BIND');
+          log.debug('[first] throwing MISSING_BIND');
           throw d1Error('MISSING_BIND');
         }
-        log.debug('[preparedStatement.first] throwing UNSUPPORTED_SQL');
+        log.debug('[first] throwing UNSUPPORTED_SQL');
         throw d1Error('UNSUPPORTED_SQL');
       }
       return result;
