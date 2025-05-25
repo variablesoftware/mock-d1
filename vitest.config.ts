@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    maxThreads:2,
     timeout: 10000, // Increase timeout to 2 minutes for smoke tests
     exclude: ['node_modules/**', 'dist/**'],
     coverage: {

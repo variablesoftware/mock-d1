@@ -67,9 +67,15 @@ export function validateSQLSyntax(sql: string): boolean {
  */
 export function validateSqlOrThrow(sql: string, opts?: { skipMalformed?: boolean }): void {
   const trimmed = sql.trim();
-  // Special case: malformed CREATE (e.g., 'CREATE foo') should throw MALFORMED_CREATE, not UNSUPPORTED_SQL
+  // D1: Any malformed or unsupported CREATE (including non-TABLE CREATE) must throw UNSUPPORTED_SQL
   if (/^CREATE\b/i.test(trimmed) && !/^CREATE\s+TABLE\b/i.test(trimmed)) {
-    throw d1Error('MALFORMED_CREATE', 'MALFORMED_CREATE');
+    log.error('SQL validation failed: Malformed or unsupported CREATE statement.', { sql });
+    throw d1Error('UNSUPPORTED_SQL', 'UNSUPPORTED_SQL');
+  }
+  // For CREATE TABLE, malformed or unsupported must throw UNSUPPORTED_SQL
+  if (/^CREATE\s+TABLE\b/i.test(trimmed) && !validateSQLSyntax(sql)) {
+    log.error('SQL validation failed: Malformed or unsupported CREATE TABLE.', { sql });
+    throw d1Error('UNSUPPORTED_SQL', 'UNSUPPORTED_SQL');
   }
   if (!validateSQLSyntax(sql)) {
     log.error('SQL validation failed: Unsupported SQL command or feature.', { sql });
@@ -89,9 +95,7 @@ export function validateSqlOrThrow(sql: string, opts?: { skipMalformed?: boolean
     if (/^UPDATE\b/i.test(trimmed) && !/SET\b/i.test(trimmed)) {
       throw d1Error('MALFORMED_UPDATE', 'MALFORMED_UPDATE');
     }
-    if (/^CREATE\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_CREATE', 'MALFORMED_CREATE');
-    }
+    // Only non-TABLE DROP/TRUNCATE/ALTER should throw their respective MALFORMED_* errors
     if (/^DROP\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
       throw d1Error('MALFORMED_DROP', 'MALFORMED_DROP');
     }

@@ -33,14 +33,19 @@ describe('handleCreateTable', () => {
     expect(table.columns[1].quoted).toBe(true);
   });
 
-  it('creates an empty table if no columns', () => {
+  it('throws UNSUPPORTED_SQL if no parens for empty table (D1 compatible)', () => {
     const sql = `CREATE TABLE ${tableName}`;
-    const result = handleCreateTable(sql, db);
-    expect(result.success).toBe(true);
-    const table = db.get(tableName.toLowerCase()) || db.get(tableName);
-    expect(table.columns.length).toBe(0);
-    expect(table.rows.length).toBe(0);
+    expect(() => handleCreateTable(sql, db)).toThrowError(/UNSUPPORTED_SQL/);
   });
+
+  // it('creates an empty table if no columns', () => {
+  //   const sql = `CREATE TABLE ${tableName}`;
+  //   const result = handleCreateTable(sql, db);
+  //   expect(result.success).toBe(true);
+  //   const table = db.get(tableName.toLowerCase()) || db.get(tableName);
+  //   expect(table.columns.length).toBe(0);
+  //   expect(table.rows.length).toBe(0);
+  // });
 
   it('throws on duplicate columns', () => {
     const sql = `CREATE TABLE ${tableName} (${colA} TEXT, ${colA} INT)`;

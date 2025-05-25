@@ -55,7 +55,7 @@ describe('validateSqlOrThrow', () => {
     expect(() => validateSqlOrThrow('UPDATE foo')).toThrow(/MALFORMED_UPDATE/);
   });
   it('throws on malformed CREATE', () => {
-    expect(() => validateSqlOrThrow('CREATE foo')).toThrow(/MALFORMED_CREATE/);
+    expect(() => validateSqlOrThrow('CREATE foo')).toThrow(/UNSUPPORTED_SQL/);
   });
   it('throws on malformed DROP', () => {
     expect(() => validateSqlOrThrow('DROP foo')).toThrow(/MALFORMED_DROP/);
