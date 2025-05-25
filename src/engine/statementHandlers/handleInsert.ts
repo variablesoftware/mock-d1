@@ -59,7 +59,7 @@ export function handleInsert(
   // Only log debug info if not in stress mode
   const isStress = process.env.D1_STRESS === '1';
   const isDebug = process.env.DEBUG === '1';
-  if (!isStress || isDebug) {
+  if (!isStress || !isDebug) {
     log.debug("called", { sql, bindArgs: summarizeValue(bindArgs) });
   }
 
@@ -88,9 +88,9 @@ export function handleInsert(
           const trimmed = s.trim();
           const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
           if (quotedMatch) {
-            return { name: quotedMatch[2], quoted: true };
+            return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
           } else {
-            return { name: trimmed, quoted: false };
+            return { name: trimmed, quoted: false, original: trimmed };
           }
         }).filter(c => c.name)
       : [];
@@ -104,6 +104,22 @@ export function handleInsert(
   }
   if (!tableData) throw d1Error('TABLE_NOT_FOUND', tableName);
 
+  // --- Normalize columns to array (compatibility with object schema) ---
+  let columns: { name: string; quoted: boolean; original: string }[];
+  if (Array.isArray(tableData.columns)) {
+    columns = tableData.columns.map(c => ({
+      name: c.name,
+      quoted: c.quoted,
+      original: c.original ?? c.name
+    }));
+  } else {
+    columns = Object.keys(tableData.columns).map(k => ({
+      name: k,
+      quoted: false,
+      original: k
+    }));
+  }
+
   // Parse columns and values from SQL
   const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
   const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
@@ -115,7 +131,6 @@ export function handleInsert(
     if (isDebug) log.error("malformed INSERT: columns after values", { sql });
     throw d1Error('MALFORMED_INSERT');
   }
-  const columns = tableData.columns;
   const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
 
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names

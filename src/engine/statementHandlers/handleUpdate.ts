@@ -46,6 +46,21 @@ export function handleUpdate(
   }
 
   const tableObj = db.get(tableKey);
+  // --- Normalize columns to array (compatibility with object schema) ---
+  let columns: { name: string; quoted: boolean; original: string }[] = [];
+  if (tableObj && Array.isArray(tableObj.columns)) {
+    columns = tableObj.columns.map(c => ({
+      name: c.name,
+      quoted: c.quoted,
+      original: c.original ?? c.name
+    }));
+  } else if (tableObj && tableObj.columns) {
+    columns = Object.keys(tableObj.columns).map(k => ({
+      name: k,
+      quoted: false,
+      original: k
+    }));
+  }
   let changes = 0;
   let rowsRead = 0;
   // Skip schema row for updates: only update data rows, never the schema row

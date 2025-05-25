@@ -61,13 +61,17 @@ export function handleAlterTableAddColumn(
   // Support both array and object schema for test compatibility
   let columnsArr: { original: string; name: string; quoted: boolean }[];
   if (Array.isArray(tableObj.columns)) {
-    columnsArr = tableObj.columns;
+    columnsArr = tableObj.columns.map(c => ({
+      name: c.name,
+      quoted: c.quoted,
+      original: c.original ?? c.name
+    }));
   } else {
     // Legacy object shape (test helpers)
     columnsArr = Object.keys(tableObj.columns).map(k => ({
       original: k,
       name: k,
-      quoted: k !== k.toLowerCase(),
+      quoted: false,
     }));
   }
   // Check for duplicate columns

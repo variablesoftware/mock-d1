@@ -73,10 +73,7 @@ export function createPreparedStatement(
     }
     // CREATE TABLE <name> (<columns>)
     const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
-    if (match) {
-      // SQLite allows CREATE TABLE t () (no columns)
-      // Do not throw if columns is empty or only whitespace
-    } else {
+    if (!match) {
       // For malformed CREATE TABLE, throw UNSUPPORTED_SQL to match test expectations
       throw d1Error('UNSUPPORTED_SQL');
     }
