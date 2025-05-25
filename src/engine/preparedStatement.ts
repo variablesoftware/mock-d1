@@ -59,6 +59,8 @@ export function createPreparedStatement(
     }
   }
 
+  let bindArgs: Record<string, unknown> = {};
+
   const upperSql = sql.trim().toUpperCase();
   // Accept SQL keywords as table/column names by relaxing regexes
   if (upperSql.startsWith("CREATE TABLE")) {
@@ -83,6 +85,46 @@ export function createPreparedStatement(
     if (!/^INSERT INTO \S+ \(.*\) VALUES \(.*\)/i.test(sql)) {
       throw d1Error('MALFORMED_INSERT');
     }
+    // Parse columns and values for further validation
+    const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
+    const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
+    if (colMatch && valuesMatch) {
+      const columns = colMatch[3]
+        ? colMatch[3].split(",").map(s => s.trim())
+        : [];
+      const values = valuesMatch[1]
+        ? valuesMatch[1].split(",").map(s => s.trim())
+        : [];
+      // Check for column/value count mismatch
+      if (columns.length !== values.length || columns.length === 0) {
+        throw d1Error('MALFORMED_INSERT');
+      }
+      // Check for duplicate column names (case-insensitive for unquoted, exact for quoted)
+      const seenUnquoted = new Set<string>();
+      const seenQuoted = new Set<string>();
+      for (const col of columns) {
+        const quotedMatch = col.match(/^([`"\[])(.+)\1/);
+        if (quotedMatch) {
+          const name = quotedMatch[2];
+          if (seenQuoted.has(name)) {
+            throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+          }
+          seenQuoted.add(name);
+        } else {
+          const lower = col.toLowerCase();
+          if (seenUnquoted.has(lower)) {
+            throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+          }
+          seenUnquoted.add(lower);
+        }
+      }
+      // Check if all values are bind params and all are undefined in bindArgs
+      if (values.every(v => v.startsWith(":")) && columns.length > 0) {
+        // Lowercase bind arg keys for case-insensitive match
+        // (bindArgs is not available yet, so skip this check here)
+        // This check must be done inside handleInsert, not here.
+      }
+    }
   } else if (upperSql.startsWith("DELETE")) {
     // DELETE must have: DELETE FROM <table>
     if (!/^DELETE FROM \S+/i.test(sql)) {
@@ -94,8 +136,6 @@ export function createPreparedStatement(
       throw d1Error('MALFORMED_UPDATE');
     }
   }
-
-  let bindArgs: Record<string, unknown> = {};
 
   /**
    * Parses and executes the SQL statement according to the mode.
