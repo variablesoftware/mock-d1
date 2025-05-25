@@ -45,6 +45,8 @@ export function evaluateWhereAst(
         rhs = rhs.slice(1, -1);
       } else if (typeof rhs === 'string' && /^\d+$/.test(rhs)) {
         rhs = Number(rhs);
+      } else if (rhs === 'null') {
+        rhs = null;
       }
       // D1: null/undefined are equivalent
       if ((colVal === null || typeof colVal === 'undefined') && (rhs === null || typeof rhs === 'undefined')) return true;
