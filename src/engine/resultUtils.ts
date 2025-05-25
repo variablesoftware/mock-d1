@@ -10,10 +10,13 @@ import { makeMetaFields } from './resultMeta.js';
  * @param meta - Optional meta fields.
  * @returns D1 result object.
  */
-export function makeD1Result<T = unknown>(results: T[], meta?: Partial<ReturnType<typeof makeMetaFields>>): { results: T[]; success: boolean; meta: ReturnType<typeof makeMetaFields> } {
+export function makeD1Result<T = unknown>(results: T[], meta?: Partial<ReturnType<typeof makeMetaFields>> & Record<string, unknown>): { results: T[]; success: boolean; meta: ReturnType<typeof makeMetaFields> & Record<string, unknown> } {
+  const stdMeta = makeMetaFields(meta);
+  // Merge any extra fields from meta (e.g., rowCount, lastRowId) into the meta object
+  const extra = meta ? Object.fromEntries(Object.entries(meta).filter(([k]) => !(k in stdMeta))) : {};
   return {
     results,
     success: true,
-    meta: makeMetaFields(meta),
+    meta: { ...stdMeta, ...extra },
   };
 }
