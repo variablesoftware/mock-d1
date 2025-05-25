@@ -146,64 +146,72 @@ export function createPreparedStatement(
    * @returns The result of the statement execution.
    */
   function parseAndRun(mode: "run" | "all" | "first" | "raw") {
-    // log.debug('Executing statement: %s (mode: %s)', sql, mode);
-    // Use the original SQL for all handler calls
-    if (/^create table/i.test(sql)) {
-      return handleCreateTable(sql, db);
-    }
+    try {
+      // log.debug('Executing statement: %s (mode: %s)', sql, mode);
+      // Use the original SQL for all handler calls
+      if (/^create table/i.test(sql)) {
+        return handleCreateTable(sql, db);
+      }
 
-    // INSERT INTO
-    if (/^insert into/i.test(sql)) {
-      return handleInsert(sql, db, bindArgs);
-    }
+      // INSERT INTO
+      if (/^insert into/i.test(sql)) {
+        return handleInsert(sql, db, bindArgs);
+      }
 
-    // SELECT * FROM
-    if (/^select \*/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
-    }
+      // SELECT * FROM
+      if (/^select \*/i.test(sql)) {
+        return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
+      }
 
-    // SELECT COUNT(*) FROM
-    if (/^select count\(\*\) from/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
-    }
+      // SELECT COUNT(*) FROM
+      if (/^select count\(\*\) from/i.test(sql)) {
+        return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
+      }
 
-    // SELECT <columns> FROM <table>
-    if (/^select [^*]+ from \S+/i.test(sql)) {
-      return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
-    }
+      // SELECT <columns> FROM <table>
+      if (/^select [^*]+ from \S+/i.test(sql)) {
+        return handleSelect(sql, db, bindArgs, mode === 'first' ? 'first' : 'all');
+      }
 
-    // DELETE FROM
-    if (/^delete from/i.test(sql)) {
-      return handleDelete(sql, db, bindArgs);
-    }
+      // DELETE FROM
+      if (/^delete from/i.test(sql)) {
+        return handleDelete(sql, db, bindArgs);
+      }
 
-    // UPDATE <table> SET <col> = :val WHERE <col2> = :val2
-    if (/^update \S+ set /i.test(sql)) {
-      return handleUpdate(sql, db, bindArgs);
-    }
+      // UPDATE <table> SET <col> = :val WHERE <col2> = :val2
+      if (/^update \S+ set /i.test(sql)) {
+        return handleUpdate(sql, db, bindArgs);
+      }
 
-    // DROP TABLE
-    if (/^drop table/i.test(sql)) {
-      return handleDropTable(sql, db);
-    }
+      // DROP TABLE
+      if (/^drop table/i.test(sql)) {
+        return handleDropTable(sql, db);
+      }
 
-    // TRUNCATE TABLE
-    if (/^truncate table/i.test(sql)) {
-      return handleTruncateTable(sql, db);
-    }
+      // TRUNCATE TABLE
+      if (/^truncate table/i.test(sql)) {
+        return handleTruncateTable(sql, db);
+      }
 
-    // ALTER TABLE ADD COLUMN
-    if (/^alter table \S+ add column/i.test(sql)) {
-      return handleAlterTableAddColumn(sql, db);
-    }
+      // ALTER TABLE ADD COLUMN
+      if (/^alter table \S+ add column/i.test(sql)) {
+        return handleAlterTableAddColumn(sql, db);
+      }
 
-    // ALTER TABLE DROP COLUMN
-    if (/^alter table \S+ drop column /i.test(sql)) {
-      return handleAlterTableDropColumn();
-    }
+      // ALTER TABLE DROP COLUMN
+      if (/^alter table \S+ drop column /i.test(sql)) {
+        return handleAlterTableDropColumn();
+      }
 
-    // Default: throw for unsupported SQL
-    throw d1Error('UNSUPPORTED_SQL');
+      // Default: throw for unsupported SQL
+      throw d1Error('UNSUPPORTED_SQL');
+    } catch (err: any) {
+      // Centralize missing bind error reporting
+      if (err && typeof err.message === 'string' && /Missing bind argument/.test(err.message)) {
+        throw d1Error('MISSING_BIND');
+      }
+      throw err;
+    }
   }
 
   return {
