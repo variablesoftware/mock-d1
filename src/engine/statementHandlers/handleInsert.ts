@@ -154,6 +154,10 @@ export function handleInsert(
       seenUnquoted.add(lower);
     }
   }
+  // If all values are undefined, skip insert and return success
+  if (values.every(v => typeof v === 'undefined')) {
+    return { success: true, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData.rows.length } };
+  }
 
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names
   const bindKeys = Object.keys(bindArgs);

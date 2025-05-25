@@ -75,7 +75,7 @@ export function handleAlterTableAddColumn(
       quoted: false,
     }));
   }
-  // Check for duplicate columns
+  // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
   const hasDuplicate = columnsArr.some(c =>
     (quoted && c.quoted && c.name === col) ||
     (!quoted && !c.quoted && c.name.toLowerCase() === col.toLowerCase())
