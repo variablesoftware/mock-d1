@@ -71,7 +71,7 @@ export function handleCreateTable(
       throw d1Error('UNSUPPORTED_SQL');
     }
     // Allow empty parens as valid (CREATE TABLE foo ())
-    if (/^\s*$/.test(colMatch[3])) {
+    if (colMatch && colMatch[3] !== undefined && /^\s*$/.test(colMatch[3])) {
       log.info("Created empty table (no columns)", { tableKey });
       db.set(tableKey, { columns: [], rows: [] });
       return {
