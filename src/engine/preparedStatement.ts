@@ -71,11 +71,14 @@ export function createPreparedStatement(
     if (!upperSql.startsWith("CREATE TABLE")) {
       throw d1Error('UNSUPPORTED_SQL');
     }
-    // CREATE TABLE <name> (<columns>)
+    // CREATE TABLE <name> (<columns>) or CREATE TABLE <name> ()
+    // Accept empty parens as valid (CREATE TABLE foo ())
     const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
     if (!match) {
+      // No parens at all (CREATE TABLE foo) is not allowed
       throw d1Error('UNSUPPORTED_SQL');
     }
+    // Do not throw for empty columns (match[1] may be empty string)
     // Do not throw for missing bind arguments or malformed columns here
   }
   if (upperSql.startsWith("SELECT")) {

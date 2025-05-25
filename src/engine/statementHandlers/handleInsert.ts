@@ -113,7 +113,7 @@ export function handleInsert(
   }
   // 3. Skip insert if all values are undefined/null (including bind values)
   if (values.every((v, i) => {
-    const bindMatch = v.match && v.match(/^:(.+)$/);
+    const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
     if (bindMatch) {
       const bindName = bindMatch[1];
       const arg = bindArgs[bindName];
@@ -121,15 +121,14 @@ export function handleInsert(
     }
     return v === undefined || v === null || v === 'undefined' || v === 'null';
   })) {
-    let tableName: string;
+    let tableName: string = '';
     try {
       tableName = extractTableName(sql, 'INSERT');
-    } catch {
-      tableName = '';
-    }
+    } catch {}
     let tableKey = tableName ? findTableKey(db, tableName) : undefined;
-    let tableData = tableKey ? db.get(tableKey) : undefined;
-    return { success: true, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData?.rows.length ?? 0 } };
+    let tableData = (tableKey && db.has(tableKey)) ? db.get(tableKey) : undefined;
+    // D1: no-op insert should return success: false
+    return { success: false, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData && tableData.rows ? tableData.rows.length : 0 } };
   }
 
   // Validate bind arguments

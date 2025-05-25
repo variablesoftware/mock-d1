@@ -71,6 +71,20 @@ export function handleAlterTableAddColumn(
       quoted: false,
     }));
   }
+  // Parse column/type, do not treat type as a column
+  let colTypeDef = sql.match(/add column\s+(.+)$/i)?.[1] || '';
+  let type = '';
+  // Match quoted or unquoted column name and type
+  const match = colTypeDef.match(/^([`"\[])?([^`"\]\s]+)\1?\s*(.*)$/);
+  if (match) {
+    quoted = !!match[1];
+    colName = match[2];
+    type = match[3] ? match[3].trim() : '';
+  } else {
+    // fallback: treat as unquoted
+    colName = colTypeDef.split(/\s+/)[0];
+    type = colTypeDef.slice(colName.length).trim();
+  }
   // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
   const hasDuplicate = columnsArr.some(c =>
     (quoted && c.quoted && c.name === colName) ||
@@ -80,7 +94,7 @@ export function handleAlterTableAddColumn(
     log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted });
     throw d1Error('GENERIC', `Column already exists: ${colName}`);
   }
-  // Add column to schema (do not add type)
+  // Add column to schema (only the name, not the type)
   if (Array.isArray(tableObj.columns)) {
     tableObj.columns.push({ original: quoted ? `"${colName}"` : colName, name: colName, quoted });
   } else {
