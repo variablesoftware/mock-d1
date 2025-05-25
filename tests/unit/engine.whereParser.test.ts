@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseWhereClause, type WhereAstNode } from '../../../src/engine/where/whereParser.js';
+import { parseWhereClause, type WhereAstNode } from '../../src/engine/where/whereParser.js';
+import { randomAlpha, randomSnake, randomInt } from '../helpers/index.js';
 
 
 describe('parseWhereClause', () => {
@@ -108,5 +109,13 @@ describe('parseWhereClause (randomized)', () => {
     expect(ast.type).toBe('and');
     expect(ast.left.type).toBe('comparison');
     expect(ast.right.type).toBe('comparison');
+  });
+
+  it('parses random column names and values', () => {
+    const col = randomSnake();
+    const val = Math.random() < 0.5 ? randomAlpha(6) : randomInt();
+    const ast = parseWhereClause(`${col} = ${typeof val === 'string' ? '"' + val + '"' : val}`);
+    expect(ast.type).toBe('comparison');
+    expect(ast.column).toBe(col);
   });
 });

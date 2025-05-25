@@ -1,5 +1,5 @@
 import { D1Row, D1TableData } from "../../types/MockD1Database";
-import { filterSchemaRow } from "../../helpers/helpers.js";
+import { filterSchemaRow } from "../../helpers/index.js";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { findTableKey } from '../tableUtils/tableLookup.js';
 import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';

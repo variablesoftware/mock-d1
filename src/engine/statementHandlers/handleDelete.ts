@@ -1,5 +1,5 @@
 import { D1Row, D1TableData } from "../../types/MockD1Database";
-import { filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/helpers.js";
+import { filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/index.js";
 import { log } from "@variablesoftware/logface";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { findTableKey } from '../tableUtils/tableLookup.js';
