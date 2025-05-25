@@ -4,6 +4,7 @@
  */
 import { d1Error } from '../errors.js';
 import { log } from '@variablesoftware/logface';
+log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}}`})
 
 /**
  * Validates a row against a schema (D1-compatible).
@@ -13,45 +14,45 @@ import { log } from '@variablesoftware/logface';
  * @returns Result object.
  */
 export function validateRowAgainstSchema(columns: { original: string; name: string; quoted: boolean }[], row: Record<string, unknown>): { result: boolean } {
-  log.debug('[schemaUtils.validateRowAgainstSchema] ENTRY', { columns, row });
+  log.debug('[validateRowAgainstSchema] ENTRY',`${process.env.VITEST_POOL_ID} ${process.env.VITEST_WORKER_ID}`, { columns, row });
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[schemaUtils.validateRowAgainstSchema] called', { columns, row });
+    log.debug('[validateRowAgainstSchema] called', { columns, row });
   }
   const rowCols = Object.keys(row);
-  log.debug('[schemaUtils.validateRowAgainstSchema] rowCols', { rowCols });
-  log.debug('[schemaUtils.validateRowAgainstSchema] columns', { columns });
+  log.debug('[validateRowAgainstSchema] rowCols', { rowCols });
+  log.debug('[validateRowAgainstSchema] columns', { columns });
   const extra = rowCols.filter(k => {
     let isQuoted = /^".*"$/.test(k);
     let match = false;
     if (isQuoted) {
       // Only match quoted columns with exact name
       const keyName = k.slice(1, -1);
-      log.debug('[schemaUtils.validateRowAgainstSchema] quoted keyName', { k, keyName });
+      log.debug('[validateRowAgainstSchema] quoted keyName', { k, keyName });
       match = columns.some(c => c.quoted && c.name === keyName);
-      log.debug('[schemaUtils.validateRowAgainstSchema] quoted key match', { key: k, keyName, match, columns });
+      log.debug('[validateRowAgainstSchema] quoted key match', { key: k, keyName, match, columns });
     } else {
       // Only match unquoted columns (case-insensitive)
       const keyName = k.toLowerCase();
-      log.debug('[schemaUtils.validateRowAgainstSchema] unquoted keyName', { k, keyName });
+      log.debug('[validateRowAgainstSchema] unquoted keyName', { k, keyName });
       match = columns.some(c => {
         if (!c.quoted) {
           const colLower = c.name.toLowerCase();
-          log.debug('[schemaUtils.validateRowAgainstSchema] compare', { keyName, colLower, eq: colLower === keyName, c });
+          log.debug('[validateRowAgainstSchema] compare', { keyName, colLower, eq: colLower === keyName, c });
           return colLower === keyName;
         }
         return false;
       });
-      log.debug('[schemaUtils.validateRowAgainstSchema] unquoted key match', { key: k, keyName, match, columns });
+      log.debug('[validateRowAgainstSchema] unquoted key match', { key: k, keyName, match, columns });
     }
-    log.debug('[schemaUtils.validateRowAgainstSchema] key result', { k, isQuoted, match });
+    log.debug('[validateRowAgainstSchema] key result', { k, isQuoted, match });
     return !match;
   });
   if (extra.length > 0) {
-    log.debug('[schemaUtils.validateRowAgainstSchema] extra columns', { extra, columns, row });
+    log.debug('[validateRowAgainstSchema] extra columns', { extra, columns, row });
     throw d1Error('EXTRA_COLUMNS', extra.join(', '));
   }
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[schemaUtils.validateRowAgainstSchema] validated OK', { columns, row });
+    log.debug('[validateRowAgainstSchema] validated OK', { columns, row });
   }
   return { result: true };
 }
@@ -65,7 +66,7 @@ export function validateRowAgainstSchema(columns: { original: string; name: stri
  */
 export function normalizeRowToSchema(columns: { original: string; name: string; quoted: boolean }[], row: Record<string, unknown>): Record<string, unknown> {
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[schemaUtils.normalizeRowToSchema] called', { columns, row });
+    log.debug('[normalizeRowToSchema] called', { columns, row });
   }
   const normalized: Record<string, unknown> = {};
   for (const col of columns) {
@@ -75,23 +76,23 @@ export function normalizeRowToSchema(columns: { original: string; name: string; 
       const quotedKey = '"' + col.name + '"';
       if (Object.prototype.hasOwnProperty.call(row, quotedKey)) {
         value = row[quotedKey];
-        log.debug('[schemaUtils.normalizeRowToSchema] found quoted key', { quotedKey, value });
+        log.debug('[normalizeRowToSchema] found quoted key', { quotedKey, value });
       } else if (Object.prototype.hasOwnProperty.call(row, col.name)) {
         value = row[col.name];
-        log.debug('[schemaUtils.normalizeRowToSchema] found unquoted key for quoted col', { key: col.name, value });
+        log.debug('[normalizeRowToSchema] found unquoted key for quoted col', { key: col.name, value });
       }
     } else {
       // Look for unquoted key (case-insensitive)
       const matchKey = Object.keys(row).find(k => k.toLowerCase() === col.name.toLowerCase());
       if (matchKey) {
         value = row[matchKey];
-        log.debug('[schemaUtils.normalizeRowToSchema] found unquoted key', { matchKey, value });
+        log.debug('[normalizeRowToSchema] found unquoted key', { matchKey, value });
       }
     }
     normalized[col.name] = value;
   }
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[schemaUtils.normalizeRowToSchema] normalized', { normalized });
+    log.debug('[normalizeRowToSchema] normalized', { normalized });
   }
   return normalized;
 }

@@ -4,6 +4,7 @@
  */
 
 import { log } from '@variablesoftware/logface';
+log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}}`})
 
 /**
  * Finds the canonical table key in the database Map, case-insensitively (D1-compatible).
@@ -13,19 +14,19 @@ import { log } from '@variablesoftware/logface';
  */
 export function findTableKey(db: Map<string, any>, tableName: string): string | undefined {
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[tableLookup.findTableKey] called', { dbKeys: Array.from(db.keys()), tableName });
+    log.debug('[findTableKey] called', { dbKeys: Array.from(db.keys()), tableName });
   }
   const lower = tableName.toLowerCase();
   for (const key of db.keys()) {
     if (key.toLowerCase() === lower) {
       if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-        log.debug('[tableLookup.findTableKey] match', { key, tableName });
+        log.debug('[findTableKey] match', { key, tableName });
       }
       return key;
     }
   }
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[tableLookup.findTableKey] not found', { tableName });
+    log.debug('[findTableKey] not found', { tableName });
   }
   return undefined;
 }
@@ -38,19 +39,19 @@ export function findTableKey(db: Map<string, any>, tableName: string): string | 
  */
 export function findColumnKey(columns: { name: string; quoted: boolean }[], columnName: string): string | undefined {
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[tableLookup.findColumnKey] called', { columns, columnName });
+    log.debug('[findColumnKey] called', { columns, columnName });
   }
   const lower = columnName.toLowerCase();
   for (const col of columns) {
     if ((col.quoted ? col.name : col.name.toLowerCase()) === lower) {
-      log.debug('[tableLookup.findColumnKey] match', { col, columnName });
+      log.debug('[findColumnKey] match', { col, columnName });
       return col.name;
     }
     if (col.name.toLowerCase() === lower) {
-      log.debug('[tableLookup.findColumnKey] match', { col, columnName });
+      log.debug('[findColumnKey] match', { col, columnName });
       return col.name;
     }
   }
-  log.debug('[tableLookup.findColumnKey] not found', { columnName });
+  log.debug('[findColumnKey] not found', { columnName });
   return undefined;
 }

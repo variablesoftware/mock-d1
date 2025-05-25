@@ -24,18 +24,18 @@ export function injectTableRows(
   rows: Record<string, unknown>[]
 ): void {
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
-    log.debug('[injectTableRows] called', { tableName, columns, rows });
+    log.debug('called', { tableName, columns, rows });
   }
   if (!tableName || typeof tableName !== 'string' || tableName.trim() === '') {
-    log.debug('[injectTableRows] invalid tableName', { tableName });
+    log.debug('invalid tableName', { tableName });
     throw new Error('Table name must be a non-empty string');
   }
   if (!Array.isArray(rows)) {
-    log.debug('[injectTableRows] rows not array', { rows });
+    log.debug('rows not array', { rows });
     throw new Error('Rows must be an array');
   }
   if (!Array.isArray(columns) || columns.length === 0) {
-    log.debug('[injectTableRows] columns not array or empty', { columns });
+    log.debug('columns not array or empty', { columns });
     throw new Error('Columns must be a non-empty array');
   }
 
@@ -43,7 +43,7 @@ export function injectTableRows(
   let table = db.get(normalizedTableName);
 
   if (!table) {
-    log.debug('[injectTableRows] creating new table', { normalizedTableName, columns });
+    log.debug('creating new table', { normalizedTableName, columns });
     db.set(normalizedTableName, {
       rows: [],
       columns,
@@ -52,7 +52,7 @@ export function injectTableRows(
   } else {
     // Overwrite columns if table exists and columns differ
     if (JSON.stringify(table.columns) !== JSON.stringify(columns)) {
-      log.debug('[injectTableRows] overwriting table columns', { normalizedTableName, columns });
+      log.debug('overwriting table columns', { normalizedTableName, columns });
       table.columns = columns;
       table.rows = [];
     }
@@ -60,15 +60,15 @@ export function injectTableRows(
 
   const tableRows = db.get(normalizedTableName)!.rows;
   if (rows.length === 0) {
-    log.debug('[injectTableRows] clearing table rows', { normalizedTableName });
+    log.debug('clearing table rows', { normalizedTableName });
     db.set(normalizedTableName, { rows: [], columns });
     return;
   }
   for (const row of rows) {
-    log.debug('[injectTableRows] validating and normalizing row', { row, columns });
+    log.debug('validating and normalizing row', { row, columns });
     validateRowAgainstSchema(columns, row);
     const normalizedRow = normalizeRowToSchema(columns, row);
-    log.debug('[injectTableRows] normalized row', { normalizedRow });
+    log.debug('normalized row', { normalizedRow });
     tableRows.push(normalizedRow);
   }
 }

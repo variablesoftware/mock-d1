@@ -4,7 +4,7 @@ import { handleAlterTableDropColumn } from './handleAlterTableDropColumn.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
 import { log } from "@variablesoftware/logface";
-
+log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}`})
 /**
  * Handles CREATE TABLE [IF NOT EXISTS] <table> statements for the mock D1 engine.
  * Adds the table to the in-memory database if it does not already exist.
@@ -60,20 +60,34 @@ export function handleCreateTable(
           },
         };
       }
-      log.error("Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
+      log.error("Table already exists", {
+        tableName,
+        tableKey,
+        sql,
+        dbKeys: Array.from(db.keys()),
+        VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+        VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+      });
       throw d1Error('GENERIC', `Table already exists: ${tableName}`);
     }
     const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
     log.debug("colMatch", { colMatch });
-    // If no parens or invalid, always throw UNSUPPORTED_SQL
-    if (!colMatch) {
-      log.error("Malformed CREATE TABLE (no parens or invalid)", { sql });
+    log.debug("colMatch after regex", { colMatch });
+    if (!colMatch || typeof colMatch[3] !== 'string') {
+      log.error("Malformed CREATE TABLE (regex failed or missing parens)", {
+        sql,
+        colMatch,
+        VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+        VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+      });
       throw d1Error('UNSUPPORTED_SQL');
     }
-    // Allow empty parens as valid (CREATE TABLE foo ())
-    if (colMatch && colMatch[3] !== undefined && /^\s*$/.test(colMatch[3])) {
-      log.info("Created empty table (no columns)", { tableKey });
+    const colSection = colMatch[3].trim();
+    log.debug("colSection before column parse", { colSection });
+    if (colSection === '') {
+      log.info("Created empty table (no columns, colSection empty string)", { tableKey });
       db.set(tableKey, { columns: [], rows: [] });
+      log.debug("db.set for empty table", { tableKey, columns: [], rows: [] });
       return {
         success: true,
         results: [],
@@ -88,43 +102,68 @@ export function handleCreateTable(
         },
       };
     }
-    // Parse columns, preserving quoted/unquoted distinction
-    let columns = colMatch[3].split(",").map(s => {
-      const trimmed = s.trim();
-      if (!trimmed) return null;
-      const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
-      if (quotedMatch) {
-        return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
-      } else {
-        const name = trimmed.split(/\s+/)[0];
-        if (!name) return null;
-        return { original: name, name, quoted: false };
-      }
-    }).filter((c): c is { original: string, name: string, quoted: boolean } => !!c && !!c.name);
-    if (!columns.length) {
-      log.error("Malformed CREATE TABLE (no valid columns)", { sql });
+    let columns: { original: string, name: string, quoted: boolean }[] = [];
+    if (colSection !== '') {
+      columns = colSection.split(",").map(s => {
+        const trimmed = s.trim();
+        log.debug("Parsing column", { raw: s, trimmed });
+        if (!trimmed) return null;
+        const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+        if (quotedMatch) {
+          log.debug("Column is quoted", { quotedMatch });
+          return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
+        } else {
+          const name = trimmed.split(/\s+/)[0];
+          log.debug("Column is unquoted", { name });
+          if (!name) return null;
+          return { original: name, name, quoted: false };
+        }
+      }).filter((c): c is { original: string, name: string, quoted: boolean } => !!c && !!c.name);
+    }
+    log.debug("Columns after parse/filter", { columns });
+    if (colSection !== '' && !columns.length) {
+      log.error("Malformed CREATE TABLE (no valid columns after parse)", {
+        sql,
+        colMatch,
+        colSection,
+        columns,
+        tableKey,
+        VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+        VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+      });
       throw d1Error('UNSUPPORTED_SQL');
     }
-    log.debug("Parsed columns", { columns });
     // Check for duplicate columns (quoted and unquoted must not overlap)
     const seenUnquoted = new Set<string>();
     const seenQuoted = new Set<string>();
     for (const col of columns) {
+      log.debug("Checking column for duplicates", { col, seenUnquoted: Array.from(seenUnquoted), seenQuoted: Array.from(seenQuoted) });
       if (col.quoted) {
         if (seenQuoted.has(col.name) || seenUnquoted.has(col.name.toLowerCase())) {
-          log.error("Duplicate quoted column in CREATE TABLE", { tableKey, col });
+          log.error("Duplicate quoted column in CREATE TABLE", {
+            tableKey,
+            col,
+            VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+            VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+          });
           throw d1Error('UNSUPPORTED_SQL');
         }
         seenQuoted.add(col.name);
       } else {
         const lower = col.name.toLowerCase();
         if (seenUnquoted.has(lower) || seenQuoted.has(col.name)) {
-          log.error("Duplicate unquoted column in CREATE TABLE", { tableKey, col });
+          log.error("Duplicate unquoted column in CREATE TABLE", {
+            tableKey,
+            col,
+            VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+            VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+          });
           throw d1Error('UNSUPPORTED_SQL');
         }
         seenUnquoted.add(lower);
       }
     }
+    log.debug("db.set for table with columns", { tableKey, columns });
     db.set(tableKey, { columns, rows: [] });
     log.info("Created table with columns", { tableKey, columns: columns.map(c => c.name) });
     return {
@@ -141,7 +180,12 @@ export function handleCreateTable(
       },
     };
   } catch (err) {
-    log.error("Exception thrown", { sql, err });
+    log.error("Exception thrown", {
+      sql,
+      err,
+      VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+      VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+    });
     // Always re-throw errors so that the promise is rejected and tests can catch them
     throw err;
   }

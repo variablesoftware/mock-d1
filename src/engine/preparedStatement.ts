@@ -22,6 +22,7 @@ import { d1Error, D1_ERRORS } from './errors.js';
 // log import removed (was unused)
 // validateSQLSyntax import removed (was unused)
 // Removed unused 'Logger' interface
+log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}}`})
 
 /**
  * Creates a mock prepared statement for the given SQL and database state.
