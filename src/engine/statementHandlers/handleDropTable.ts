@@ -20,7 +20,7 @@ export function handleDropTable(
     tableName = extractTableName(sql, 'DROP');
   } catch (err) {
     log.error("Malformed DROP TABLE statement", { sql, err });
-    throw new Error("Malformed DROP TABLE statement.");
+    throw d1Error('MALFORMED_DROP');
   }
   const tableKey = findTableKey(db, tableName);
   log.debug("handleDropTable tableKey", { tableName, tableKey });

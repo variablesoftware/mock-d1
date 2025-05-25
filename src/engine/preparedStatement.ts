@@ -38,7 +38,7 @@ export function createPreparedStatement(
   // log.debug('Preparing statement: %s', sql);
   // Reject multiple SQL statements in one string
   if (/;/.test(sql.trim().replace(/;$/, ''))) {
-    throw new Error("Multiple SQL statements in one string are not supported.");
+    throw d1Error('MULTI_STATEMENT');
   }
   // Throw on unsupported SQL at prepare-time (D1 behavior)
   if (
@@ -46,11 +46,18 @@ export function createPreparedStatement(
     /\bbetween\b/i.test(sql) ||
     /\bjoin\b/i.test(sql)
   ) {
-    throw new Error("Unsupported SQL syntax in mockD1Database: LIKE, BETWEEN, JOIN not implemented.");
+    throw d1Error('UNSUPPORTED_SQL', 'LIKE, BETWEEN, JOIN not implemented.');
   }
 
   // Only validate for unsupported SQL, not malformed SQL (malformed errors must be thrown at run-time)
   validateSqlOrThrow(sql, { skipMalformed: true });
+
+  // Defensive: ensure all tables in db have a valid columns array
+  for (const table of db.values()) {
+    if (!Array.isArray(table.columns)) {
+      table.columns = [];
+    }
+  }
 
   const upperSql = sql.trim().toUpperCase();
   // Accept SQL keywords as table/column names by relaxing regexes
@@ -61,6 +68,9 @@ export function createPreparedStatement(
       // SQLite allows CREATE TABLE t () (no columns)
       // Do not throw if columns is empty or only whitespace
       // (previously: if (!columns || /^\s*$/.test(columns)) throw ...)
+    } else {
+      // For malformed CREATE TABLE, throw UNSUPPORTED_SQL to match test expectations
+      throw d1Error('UNSUPPORTED_SQL');
     }
   }
   if (upperSql.startsWith("SELECT")) {
@@ -152,7 +162,7 @@ export function createPreparedStatement(
     }
 
     // Default: throw for unsupported SQL
-    throw new Error(`Malformed SQL statement: ${sql.trim().split(' ')[0].toUpperCase()}`);
+    throw d1Error('UNSUPPORTED_SQL', `Unsupported or malformed SQL statement: ${sql.trim().split(' ')[0].toUpperCase()}`);
   }
 
   return {

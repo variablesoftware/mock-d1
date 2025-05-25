@@ -1,7 +1,7 @@
 import { mockD1Database } from "../../src";
 import { describe, expect, test } from "vitest";
 
-describe("butter churn 🧈 (invalid stress testing) - missing bind argument", () => {
+describe("invalid stress testing - missing bind argument", () => {
   test("throws on missing bind argument", async () => {
     const db = mockD1Database();
     await db.prepare("CREATE TABLE IF NOT EXISTS foo (a INT, b INT)").run();

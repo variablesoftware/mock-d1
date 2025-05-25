@@ -38,6 +38,9 @@ export const D1_ERRORS = {
  * @returns Error instance.
  */
 export function d1Error(code: keyof typeof D1_ERRORS, details?: string): Error {
+  if (!(code in D1_ERRORS)) {
+    throw new Error(`Unknown D1 error code: ${String(code)}`);
+  }
   const msg = details ? `${D1_ERRORS[code]}: ${details}` : D1_ERRORS[code];
   return new Error(msg);
 }

@@ -1,5 +1,5 @@
 import { log } from '@variablesoftware/logface';
-import { d1Error } from './errors.js';
+import { d1Error, D1_ERRORS } from './errors.js';
 
 const UNSUPPORTED_SQL_PATTERNS = [
   /\bIN\b/i,
@@ -66,36 +66,40 @@ export function validateSQLSyntax(sql: string): boolean {
  * @param opts - Optional options object.
  */
 export function validateSqlOrThrow(sql: string, opts?: { skipMalformed?: boolean }): void {
+  const trimmed = sql.trim();
+  // Special case: malformed CREATE (e.g., 'CREATE foo') should throw MALFORMED_CREATE, not UNSUPPORTED_SQL
+  if (/^CREATE\b/i.test(trimmed) && !/^CREATE\s+TABLE\b/i.test(trimmed)) {
+    throw d1Error('MALFORMED_CREATE', 'MALFORMED_CREATE');
+  }
   if (!validateSQLSyntax(sql)) {
     log.error('SQL validation failed: Unsupported SQL command or feature.', { sql });
-    throw d1Error('UNSUPPORTED_SQL', 'This SQL command or feature is not supported by D1.');
+    throw d1Error('UNSUPPORTED_SQL', 'UNSUPPORTED_SQL');
   }
   if (!opts?.skipMalformed) {
     // Malformed SQL checks (very basic, only for top-level statement type)
-    const trimmed = sql.trim();
     if (/^SELECT\b/i.test(trimmed) && !/FROM\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_SELECT');
+      throw d1Error('MALFORMED_SELECT', 'MALFORMED_SELECT');
     }
     if (/^INSERT\b/i.test(trimmed) && !/VALUES\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_INSERT');
+      throw d1Error('MALFORMED_INSERT', 'MALFORMED_INSERT');
     }
     if (/^DELETE\b/i.test(trimmed) && !/FROM\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_DELETE');
+      throw d1Error('MALFORMED_DELETE', 'MALFORMED_DELETE');
     }
     if (/^UPDATE\b/i.test(trimmed) && !/SET\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_UPDATE');
+      throw d1Error('MALFORMED_UPDATE', 'MALFORMED_UPDATE');
     }
     if (/^CREATE\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_CREATE');
+      throw d1Error('MALFORMED_CREATE', 'MALFORMED_CREATE');
     }
     if (/^DROP\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_DROP');
+      throw d1Error('MALFORMED_DROP', 'MALFORMED_DROP');
     }
     if (/^TRUNCATE\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_TRUNCATE');
+      throw d1Error('MALFORMED_TRUNCATE', 'MALFORMED_TRUNCATE');
     }
     if (/^ALTER\b/i.test(trimmed) && !/TABLE\b/i.test(trimmed)) {
-      throw d1Error('MALFORMED_ALTER');
+      throw d1Error('MALFORMED_ALTER', 'MALFORMED_ALTER');
     }
   }
 }

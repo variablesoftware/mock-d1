@@ -67,7 +67,7 @@ export function handleCreateTable(
   // Parse columns from CREATE TABLE statement (robust: match quoted/unquoted table names, allow whitespace)
   // Accepts: CREATE TABLE [IF NOT EXISTS] <table> (col1 TYPE, col2 TYPE, ...)
   const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
-  let columns: { name: string; quoted: boolean }[] = [];
+  let columns: { name: string; quoted: boolean, original: string }[] = [];
   if (!colMatch) {
     // No column list: allow, create empty table (no schema row)
     db.set(tableKey, { columns: [], rows: [] });
@@ -110,10 +110,11 @@ export function handleCreateTable(
     // Match quoted identifier (double quotes, backticks, or square brackets)
     const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
     if (quotedMatch) {
-      return { name: quotedMatch[2], quoted: true };
+      return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
     } else {
       // Unquoted: take up to first whitespace (for type)
-      return { name: trimmed.split(/\s+/)[0].toLowerCase(), quoted: false };
+      const name = trimmed.split(/\s+/)[0].toLowerCase();
+      return { original: name, name, quoted: false };
     }
   }).filter(c => c.name);
   if (columns.length === 0 || columns.some(c => !c.name)) {
