@@ -25,23 +25,20 @@ export function handleAlterTableAddColumn(
   }
   // Parse column name and quoted status
   // Accepts double quotes, backticks, or square brackets for quoted identifiers
-  const colMatch = sql.match(/add column\s+([`"\[])(.+?)\1\s+(\w+)/i) || sql.match(/add column\s+(\w+)\s+(\w+)/i);
-  if (!colMatch) {
-    log.error("Malformed ALTER TABLE ADD COLUMN statement (regex)", { sql });
-    throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
-  }
-  let colDef = colMatch[2] ? colMatch[2] : colMatch[1];
-  // Parse column/type, do not treat type as a column
-  let col = colDef.trim();
+  // Only extract the column name, not the type, for schema
+  let colName: string;
   let quoted = false;
-  let colName = col;
-  let type = '';
-  // Match quoted or unquoted column name and type
-  const match = col.match(/^([`"\[])?([^`"\]\s]+)\1?\s*(.*)$/);
-  if (match) {
-    quoted = !!match[1];
-    colName = match[2];
-    type = match[3] ? match[3].trim() : '';
+  const quotedColMatch = sql.match(/add column\s+([`"\[])(.+?)\1/i);
+  if (quotedColMatch) {
+    quoted = true;
+    colName = quotedColMatch[2];
+  } else {
+    const unquotedColMatch = sql.match(/add column\s+(\w+)/i);
+    if (!unquotedColMatch) {
+      log.error("Malformed ALTER TABLE ADD COLUMN statement (regex)", { sql });
+      throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
+    }
+    colName = unquotedColMatch[1];
   }
   const tableKey = findTableKey(db, tableName);
   log.debug("handleAlterTableAddColumn tableKey", { tableName, tableKey });
@@ -53,10 +50,6 @@ export function handleAlterTableAddColumn(
     tableExists: tableKey ? db.has(tableKey) : false,
   });
   if (!tableKey) throw d1Error('TABLE_NOT_FOUND', tableName);
-  if (type && !/^(INTEGER|TEXT|REAL|BLOB)$/i.test(type)) {
-    log.error("Unsupported column type in ALTER TABLE ADD COLUMN", { type });
-    throw new Error(`Unsupported column type: ${type}`);
-  }
   const tableObj = db.get(tableKey);
   if (!tableObj || !Array.isArray(tableObj.rows) || !tableObj.rows[0]) {
     log.error("Table not found or invalid rows in ALTER TABLE ADD COLUMN", { tableKey });
@@ -87,11 +80,10 @@ export function handleAlterTableAddColumn(
     log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted });
     throw d1Error('GENERIC', `Column already exists: ${colName}`);
   }
-  // Add column to schema
+  // Add column to schema (do not add type)
   if (Array.isArray(tableObj.columns)) {
     tableObj.columns.push({ original: quoted ? `"${colName}"` : colName, name: colName, quoted });
   } else {
-    // Legacy object shape
     (tableObj.columns as any)[quoted ? colName : colName.toLowerCase()] = null;
   }
   // Add column to all data rows

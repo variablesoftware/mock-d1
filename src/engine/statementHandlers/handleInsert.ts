@@ -63,6 +63,75 @@ export function handleInsert(
     log.debug("called", { sql, bindArgs: summarizeValue(bindArgs) });
   }
 
+  // Parse columns and values from SQL
+  const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
+  const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
+  if (!colMatch || !valuesMatch) {
+    if (isDebug) log.error("malformed INSERT", { sql });
+    throw d1Error('MALFORMED_INSERT');
+  }
+  if (sql.indexOf(colMatch[0]) > sql.indexOf(valuesMatch[0])) {
+    if (isDebug) log.error("malformed INSERT: columns after values", { sql });
+    throw d1Error('MALFORMED_INSERT');
+  }
+  const columns = colMatch[3]
+    ? colMatch[3].split(",").map(s => {
+        const trimmed = s.trim();
+        const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+        if (quotedMatch) {
+          return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
+        } else {
+          return { name: trimmed, quoted: false, original: trimmed };
+        }
+      }).filter(c => c.name)
+    : [];
+  const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
+
+  // Remove all previous seenUnquoted/seenQuoted declarations above this point
+  // --- RUNTIME VALIDATION (single block, no redeclarations) ---
+  // 1. Throw if column/value count mismatch
+  if (columns.length !== values.length || columns.length === 0) {
+    throw d1Error('MALFORMED_INSERT', 'Column/value count mismatch in INSERT');
+  }
+  // 2. Throw if duplicate column names
+  // Only declare here, and do not redeclare above
+  const seenUnquotedInsert = new Set<string>();
+  const seenQuotedInsert = new Set<string>();
+  for (const col of columns) {
+    if (col.quoted) {
+      if (seenQuotedInsert.has(col.name)) {
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenQuotedInsert.add(col.name);
+    } else {
+      const lower = col.name.toLowerCase();
+      if (seenUnquotedInsert.has(lower)) {
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenUnquotedInsert.add(lower);
+    }
+  }
+  // 3. Skip insert if all values are undefined/null (including bind values)
+  if (values.every((v, i) => {
+    const bindMatch = v.match && v.match(/^:(.+)$/);
+    if (bindMatch) {
+      const bindName = bindMatch[1];
+      const arg = bindArgs[bindName];
+      return arg === undefined || arg === null;
+    }
+    return v === undefined || v === null || v === 'undefined' || v === 'null';
+  })) {
+    let tableName: string;
+    try {
+      tableName = extractTableName(sql, 'INSERT');
+    } catch {
+      tableName = '';
+    }
+    let tableKey = tableName ? findTableKey(db, tableName) : undefined;
+    let tableData = tableKey ? db.get(tableKey) : undefined;
+    return { success: true, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData?.rows.length ?? 0 } };
+  }
+
   // Validate bind arguments
   try {
     bindArgsSchema.parse(bindArgs);
@@ -105,42 +174,29 @@ export function handleInsert(
   if (!tableData) throw d1Error('TABLE_NOT_FOUND', tableName);
 
   // --- Normalize columns to array (compatibility with object schema) ---
-  let columns: { name: string; quoted: boolean; original: string }[];
+  let columnsArr: { name: string; quoted: boolean; original: string }[];
   if (Array.isArray(tableData.columns)) {
-    columns = tableData.columns.map(c => ({
+    columnsArr = tableData.columns.map(c => ({
       name: c.name,
       quoted: c.quoted,
       original: c.original ?? c.name
     }));
   } else {
-    columns = Object.keys(tableData.columns).map(k => ({
+    columnsArr = Object.keys(tableData.columns).map(k => ({
       name: k,
       quoted: false,
       original: k
     }));
   }
 
-  // Parse columns and values from SQL
-  const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
-  const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
-  if (!colMatch || !valuesMatch) {
-    if (isDebug) log.error("malformed INSERT", { sql });
-    throw d1Error('MALFORMED_INSERT');
-  }
-  if (sql.indexOf(colMatch[0]) > sql.indexOf(valuesMatch[0])) {
-    if (isDebug) log.error("malformed INSERT: columns after values", { sql });
-    throw d1Error('MALFORMED_INSERT');
-  }
-  const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
-
   // Throw if column/value count mismatch
-  if (columns.length !== values.length || columns.length === 0) {
+  if (columnsArr.length !== values.length || columnsArr.length === 0) {
     throw d1Error('MALFORMED_INSERT', 'Column/value count mismatch in INSERT');
   }
   // Throw if duplicate column names (only check once here)
   const seenUnquoted = new Set<string>();
   const seenQuoted = new Set<string>();
-  for (const col of columns) {
+  for (const col of columnsArr) {
     if (col.quoted) {
       if (seenQuoted.has(col.name)) {
         throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
@@ -154,7 +210,8 @@ export function handleInsert(
       seenUnquoted.add(lower);
     }
   }
-  // If all values are undefined, skip insert and return success
+
+  // If all values are undefined/null, skip insert and return success
   if (values.every(v => v === undefined || v === null || v === 'undefined' || v === 'null')) {
     return { success: true, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData.rows.length } };
   }

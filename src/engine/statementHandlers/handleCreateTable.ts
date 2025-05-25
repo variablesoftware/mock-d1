@@ -65,6 +65,7 @@ export function handleCreateTable(
     }
     const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
     log.debug("[handleCreateTable] colMatch", { colMatch });
+    // Allow empty parens as valid (CREATE TABLE foo ())
     if (colMatch && /^\s*$/.test(colMatch[3])) {
       log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
       db.set(tableKey, { columns: [], rows: [] });
@@ -84,7 +85,6 @@ export function handleCreateTable(
     }
     if (!colMatch) {
       log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
-      // Always throw UNSUPPORTED_SQL for malformed CREATE
       throw d1Error('UNSUPPORTED_SQL');
     }
     // Parse columns, preserving quoted/unquoted distinction
