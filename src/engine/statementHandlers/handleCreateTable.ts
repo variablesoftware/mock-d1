@@ -64,14 +64,20 @@ export function handleCreateTable(
     log.error("Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
     throw d1Error('GENERIC', `Table already exists: ${tableName}`);
   }
+  log.debug("Parsing CREATE TABLE", { sql });
   // Parse columns from CREATE TABLE statement (robust: match quoted/unquoted table names, allow whitespace)
   // Accepts: CREATE TABLE [IF NOT EXISTS] <table> (col1 TYPE, col2 TYPE, ...)
   const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
   let columns: { name: string; quoted: boolean, original: string }[] = [];
+  // If columns section is missing, allow (SQLite-compatible, but no schema row)
   if (!colMatch) {
-    // No column list: allow, create empty table (no schema row)
+    log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
+    // If the SQL is just 'CREATE TABLE' or otherwise malformed, throw UNSUPPORTED_SQL
+    if (/^create table\s*$/i.test(sql.trim())) {
+      throw d1Error('UNSUPPORTED_SQL');
+    }
     db.set(tableKey, { columns: [], rows: [] });
-    log.info("Created empty table (no columns)", { tableKey });
+    log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
     return {
       success: true,
       results: [],
@@ -86,8 +92,30 @@ export function handleCreateTable(
       },
     };
   }
-  // If columns section is missing or empty, allow (SQLite-compatible, but no schema row)
-  if (!colMatch[3] || /^\s*$/.test(colMatch[3])) {
+  // If columns section is present but empty (CREATE TABLE foo ()), allow: create empty table (no columns)
+  if (colMatch && /^\s*$/.test(colMatch[3])) {
+    log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
+    db.set(tableKey, { columns: [], rows: [] });
+    return {
+      success: true,
+      results: [],
+      meta: {
+        duration: 0,
+        size_after: 0,
+        rows_read: 0,
+        rows_written: 0,
+        last_row_id: 0,
+        changed_db: true,
+        changes: 0,
+      },
+    };
+  }
+  // If columns section is present but empty (CREATE TABLE foo ()), throw MALFORMED_CREATE
+  if (/^\s*$/.test(colMatch[3])) {
+    throw d1Error('MALFORMED_CREATE', 'must define at least one column');
+  }
+  // If columns section is missing, allow (SQLite-compatible, but no schema row)
+  if (!colMatch[3]) {
     db.set(tableKey, { columns: [], rows: [] });
     log.info("Created empty table (no columns)", { tableKey });
     return {
@@ -117,6 +145,7 @@ export function handleCreateTable(
       return { original: name, name, quoted: false };
     }
   }).filter(c => c.name);
+  log.debug("[handleCreateTable] Parsed columns", { columns });
   if (columns.length === 0 || columns.some(c => !c.name)) {
     throw d1Error('MALFORMED_CREATE', 'must define at least one column');
   }
@@ -126,14 +155,14 @@ export function handleCreateTable(
   for (const col of columns) {
     if (col.quoted) {
       if (seenQuoted.has(col.name)) {
-        log.error("Duplicate quoted column in CREATE TABLE", { tableKey, col });
+        log.error("[handleCreateTable] Duplicate quoted column in CREATE TABLE", { tableKey, col });
         throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
       }
       seenQuoted.add(col.name);
     } else {
       const lower = col.name.toLowerCase();
       if (seenUnquoted.has(lower)) {
-        log.error("Duplicate unquoted column in CREATE TABLE", { tableKey, col });
+        log.error("[handleCreateTable] Duplicate unquoted column in CREATE TABLE", { tableKey, col });
         throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
       }
       seenUnquoted.add(lower);
@@ -145,7 +174,7 @@ export function handleCreateTable(
     tableKey,
     columns: columns.map(c => ({ name: c.name, quoted: c.quoted })),
   });
-  log.info("Created table with columns", { tableKey, columns: columns.map(c => c.name) });
+  log.info("[handleCreateTable] Created table with columns", { tableKey, columns: columns.map(c => c.name) });
   return {
     success: true,
     results: [],

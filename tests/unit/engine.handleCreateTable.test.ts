@@ -49,9 +49,13 @@ describe('handleCreateTable', () => {
     expect(() => handleCreateTable(sql2, db)).toThrow();
   });
 
-  it('throws if no columns defined (empty parens)', () => {
+  it('allows empty parens (no columns) and creates an empty table', () => {
     const sql = `CREATE TABLE ${tableName} ()`;
-    expect(() => handleCreateTable(sql, db)).toThrow();
+    const result = handleCreateTable(sql, db);
+    expect(result && typeof result === 'object' && 'success' in result).toBe(true);
+    const table = db.get(tableName.toLowerCase()) || db.get(tableName);
+    expect(table.columns.length).toBe(0);
+    expect(table.rows.length).toBe(0);
   });
 
   it('throws on malformed SQL', () => {
