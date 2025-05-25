@@ -5,6 +5,18 @@
  */
 import { WhereAstNode } from './whereParser.js';
 
+function normalizeColumnName(col: string): string {
+  // Remove surrounding quotes (", ', `, [ ]) if present
+  if ((col.startsWith('"') && col.endsWith('"')) ||
+      (col.startsWith('`') && col.endsWith('`')) ||
+      (col.startsWith("'") && col.endsWith("'")) ||
+      (col.startsWith('[') && col.endsWith(']'))
+  ) {
+    return col.slice(1, -1);
+  }
+  return col;
+}
+
 export function evaluateWhereAst(
   ast: WhereAstNode,
   row: Record<string, unknown>,
@@ -16,12 +28,14 @@ export function evaluateWhereAst(
     case 'or':
       return evaluateWhereAst(ast.left, row, bindArgs) || evaluateWhereAst(ast.right, row, bindArgs);
     case 'isNull': {
-      const colVal = row[ast.column] ?? row[ast.column.toLowerCase()];
+      const colKey = normalizeColumnName(ast.column);
+      const colVal = row[colKey] ?? row[colKey.toLowerCase()];
       const isNull = colVal === null || typeof colVal === 'undefined';
       return ast.not ? !isNull : isNull;
     }
     case 'comparison': {
-      let colVal = row[ast.column] ?? row[ast.column.toLowerCase()];
+      const colKey = normalizeColumnName(ast.column);
+      let colVal = row[colKey] ?? row[colKey.toLowerCase()];
       let rhs = ast.value;
       if (typeof rhs === 'string' && rhs.startsWith(':')) {
         // Bind parameter

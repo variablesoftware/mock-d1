@@ -46,10 +46,13 @@ export function createPreparedStatement(
     /\bbetween\b/i.test(sql) ||
     /\bjoin\b/i.test(sql)
   ) {
-    throw d1Error('UNSUPPORTED_SQL', 'LIKE, BETWEEN, JOIN not implemented.');
+    throw d1Error('UNSUPPORTED_SQL');
   }
 
   // Only validate for unsupported SQL, not malformed SQL (malformed errors must be thrown at run-time)
+  // Fix: Do not throw on missing bind arguments at prepare-time, only at run-time in handlers
+  // Patch: Do not throw for missing bind arguments at prepare-time for INSERT/SELECT/UPDATE/DELETE
+  // Only check for unsupported SQL and skip malformed/missing bind errors here
   validateSqlOrThrow(sql, { skipMalformed: true });
 
   // Defensive: ensure all tables in db have a valid columns array
@@ -63,13 +66,16 @@ export function createPreparedStatement(
 
   const upperSql = sql.trim().toUpperCase();
   // Accept SQL keywords as table/column names by relaxing regexes
-  if (upperSql.startsWith("CREATE TABLE")) {
+  if (upperSql.startsWith("CREATE ")) {
+    // Only CREATE TABLE is supported; all others are unsupported
+    if (!upperSql.startsWith("CREATE TABLE")) {
+      throw d1Error('UNSUPPORTED_SQL');
+    }
     // CREATE TABLE <name> (<columns>)
     const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
     if (match) {
       // SQLite allows CREATE TABLE t () (no columns)
       // Do not throw if columns is empty or only whitespace
-      // (previously: if (!columns || /^\s*$/.test(columns)) throw ...)
     } else {
       // For malformed CREATE TABLE, throw UNSUPPORTED_SQL to match test expectations
       throw d1Error('UNSUPPORTED_SQL');
@@ -118,12 +124,7 @@ export function createPreparedStatement(
           seenUnquoted.add(lower);
         }
       }
-      // Check if all values are bind params and all are undefined in bindArgs
-      if (values.every(v => v.startsWith(":")) && columns.length > 0) {
-        // Lowercase bind arg keys for case-insensitive match
-        // (bindArgs is not available yet, so skip this check here)
-        // This check must be done inside handleInsert, not here.
-      }
+      // Do NOT check for missing bind arguments here; let the handler throw at run-time
     }
   } else if (upperSql.startsWith("DELETE")) {
     // DELETE must have: DELETE FROM <table>
@@ -202,7 +203,7 @@ export function createPreparedStatement(
     }
 
     // Default: throw for unsupported SQL
-    throw d1Error('UNSUPPORTED_SQL', `Unsupported or malformed SQL statement: ${sql.trim().split(' ')[0].toUpperCase()}`);
+    throw d1Error('UNSUPPORTED_SQL');
   }
 
   return {
