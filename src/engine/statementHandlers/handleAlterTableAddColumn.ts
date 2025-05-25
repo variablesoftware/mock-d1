@@ -80,7 +80,7 @@ export function handleAlterTableAddColumn(
   );
   if (hasDuplicate) {
     log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted: quotedCol });
-    throw d1Error('GENERIC', `Duplicate column in ALTER TABLE ADD COLUMN: ${colName}`);
+    throw d1Error('UNSUPPORTED_SQL');
   }
   // Throw for unsupported column types (simulate D1 strictness)
   if (type && !/^(text|integer|real|blob|numeric)$/i.test(type)) {

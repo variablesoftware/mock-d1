@@ -65,8 +65,13 @@ export function handleCreateTable(
     }
     const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
     log.debug("colMatch", { colMatch });
+    // If no parens or invalid, always throw UNSUPPORTED_SQL
+    if (!colMatch) {
+      log.error("Malformed CREATE TABLE (no parens or invalid)", { sql });
+      throw d1Error('UNSUPPORTED_SQL');
+    }
     // Allow empty parens as valid (CREATE TABLE foo ())
-    if (colMatch && /^\s*$/.test(colMatch[3])) {
+    if (/^\s*$/.test(colMatch[3])) {
       log.info("Created empty table (no columns)", { tableKey });
       db.set(tableKey, { columns: [], rows: [] });
       return {
@@ -83,37 +88,39 @@ export function handleCreateTable(
         },
       };
     }
-    if (!colMatch) {
-      log.error("Malformed CREATE TABLE (no parens or invalid)", { sql });
-      throw d1Error('UNSUPPORTED_SQL');
-    }
     // Parse columns, preserving quoted/unquoted distinction
     let columns = colMatch[3].split(",").map(s => {
       const trimmed = s.trim();
+      if (!trimmed) return null;
       const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
       if (quotedMatch) {
         return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
       } else {
-        const name = trimmed.split(/\s+/)[0].toLowerCase();
+        const name = trimmed.split(/\s+/)[0];
+        if (!name) return null;
         return { original: name, name, quoted: false };
       }
-    }).filter(c => c.name);
+    }).filter((c): c is { original: string, name: string, quoted: boolean } => !!c && !!c.name);
+    if (!columns.length) {
+      log.error("Malformed CREATE TABLE (no valid columns)", { sql });
+      throw d1Error('UNSUPPORTED_SQL');
+    }
     log.debug("Parsed columns", { columns });
-    // Check for duplicate columns
+    // Check for duplicate columns (quoted and unquoted must not overlap)
     const seenUnquoted = new Set<string>();
     const seenQuoted = new Set<string>();
     for (const col of columns) {
       if (col.quoted) {
-        if (seenQuoted.has(col.name)) {
+        if (seenQuoted.has(col.name) || seenUnquoted.has(col.name.toLowerCase())) {
           log.error("Duplicate quoted column in CREATE TABLE", { tableKey, col });
-          throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
+          throw d1Error('UNSUPPORTED_SQL');
         }
         seenQuoted.add(col.name);
       } else {
         const lower = col.name.toLowerCase();
-        if (seenUnquoted.has(lower)) {
+        if (seenUnquoted.has(lower) || seenQuoted.has(col.name)) {
           log.error("Duplicate unquoted column in CREATE TABLE", { tableKey, col });
-          throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
+          throw d1Error('UNSUPPORTED_SQL');
         }
         seenUnquoted.add(lower);
       }
