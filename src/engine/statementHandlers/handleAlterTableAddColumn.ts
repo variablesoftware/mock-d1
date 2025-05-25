@@ -76,24 +76,22 @@ export function handleAlterTableAddColumn(
       tableKey,
       colTypeDef,
       colName,
-      quotedCol,
-      VITEST_POOL_ID: process.env.VITEST_POOL_ID,
-      VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+      quotedCol
     });
     throw d1Error('UNSUPPORTED_SQL');
   }
   // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
   const hasDuplicate = columnsArr.some(c =>
     (quotedCol && c.quoted && c.name === colName) ||
-    (!quotedCol && !c.quoted && c.name.toLowerCase() === colName.toLowerCase())
+    (!quotedCol && !c.quoted && c.name.toLowerCase() === colName.toLowerCase()) ||
+    (quotedCol && !c.quoted && c.name === colName) || // also check quoted new col against unquoted existing
+    (!quotedCol && c.quoted && c.name.toLowerCase() === colName.toLowerCase()) // and unquoted new col against quoted existing
   );
   if (hasDuplicate) {
     log.error("Duplicate column in ALTER TABLE ADD COLUMN", {
       tableKey,
       col: colName,
-      quoted: quotedCol,
-      VITEST_POOL_ID: process.env.VITEST_POOL_ID,
-      VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+      quoted: quotedCol
     });
     throw d1Error('UNSUPPORTED_SQL');
   }

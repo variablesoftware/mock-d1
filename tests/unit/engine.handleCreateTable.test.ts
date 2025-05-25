@@ -35,7 +35,7 @@ describe('handleCreateTable', () => {
 
   it('throws UNSUPPORTED_SQL if no parens for empty table (D1 compatible)', () => {
     const sql = `CREATE TABLE ${tableName}`;
-    expect(() => handleCreateTable(sql, db)).toThrowError(/UNSUPPORTED_SQL/);
+    expect(() => handleCreateTable(sql, db)).toThrowError('Unsupported SQL syntax');
   });
 
   // it('creates an empty table if no columns', () => {

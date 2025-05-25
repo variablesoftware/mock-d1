@@ -42,6 +42,11 @@ export function validateSQLSyntax(sql: string): boolean {
     return true;
   }
 
+  // 1b. Explicitly allow valid INSERT INTO ... VALUES ... (robust, allow whitespace/comments)
+  if (/^INSERT\s+INTO\s+([A-Za-z_][\w$]*|"[^"]+")\s*\([^)]*\)\s*VALUES\s*\([^)]*\)\s*;?$/ims.test(trimmed)) {
+    return true;
+  }
+
   // 2. For all other statements, check for unsupported patterns
   for (const pattern of UNSUPPORTED_SQL_PATTERNS) {
     if (pattern.test(trimmed)) {

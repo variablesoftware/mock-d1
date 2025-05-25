@@ -4,7 +4,6 @@
  */
 
 import { log } from '@variablesoftware/logface';
-log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}}`})
 
 /**
  * Finds the canonical table key in the database Map, case-insensitively (D1-compatible).

@@ -4,7 +4,6 @@
  */
 import { d1Error } from '../errors.js';
 import { log } from '@variablesoftware/logface';
-log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_ID: ${process.env.VITEST_WORKER_ID}}`})
 
 /**
  * Validates a row against a schema (D1-compatible).
@@ -14,7 +13,6 @@ log.options({tag:`VITEST_POOL_ID: ${process.env.VITEST_POOL_ID}, VITEST_WORKER_I
  * @returns Result object.
  */
 export function validateRowAgainstSchema(columns: { original: string; name: string; quoted: boolean }[], row: Record<string, unknown>): { result: boolean } {
-  log.debug('[validateRowAgainstSchema] ENTRY',`${process.env.VITEST_POOL_ID} ${process.env.VITEST_WORKER_ID}`, { columns, row });
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
     log.debug('[validateRowAgainstSchema] called', { columns, row });
   }
