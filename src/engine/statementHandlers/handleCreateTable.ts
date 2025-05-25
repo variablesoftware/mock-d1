@@ -29,163 +29,132 @@ export function handleCreateTable(
     return handleAlterTableDropColumn();
   }
 
+  log.debug("[handleCreateTable] Entered", { sql });
   // Use shared utility for table name extraction and normalization
-  const tableName = extractTableName(sql, 'CREATE');
-  const tableKey = normalizeTableName(tableName);
-  log.debug("tableKey", { tableName, tableKey });
-  log.debug("existence check", {
-    sql,
-    tableName,
-    tableKey,
-    dbKeys: Array.from(db.keys()),
-    hasIfNotExists: /if not exists/i.test(sql),
-    tableExists: db.has(tableKey),
-  });
-  // If the table already exists, only skip creation if IF NOT EXISTS is present
-  if (db.has(tableKey)) {
-    if (/if not exists/i.test(sql)) {
-      if (!isStress) {
-        log.info("CREATE TABLE IF NOT EXISTS: table already exists, skipping", { tableName, tableKey });
+  try {
+    const tableName = extractTableName(sql, 'CREATE');
+    const tableKey = normalizeTableName(tableName);
+    log.debug("[handleCreateTable] Table name extracted", { tableName, tableKey });
+    log.debug("[handleCreateTable] Existence check", {
+      sql,
+      tableName,
+      tableKey,
+      dbKeys: Array.from(db.keys()),
+      hasIfNotExists: /if not exists/i.test(sql),
+      tableExists: db.has(tableKey),
+    });
+    if (db.has(tableKey)) {
+      if (/if not exists/i.test(sql)) {
+        log.info("[handleCreateTable] IF NOT EXISTS: table already exists, skipping", { tableName, tableKey });
+        return {
+          success: true,
+          results: [],
+          meta: {
+            duration: 0,
+            size_after: db.get(tableKey)?.rows.length ?? 0,
+            rows_read: 0,
+            rows_written: 0,
+            last_row_id: 0,
+            changed_db: false,
+            changes: 0,
+          },
+        };
       }
+      log.error("[handleCreateTable] Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
+      throw d1Error('GENERIC', `Table already exists: ${tableName}`);
+    }
+    const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
+    log.debug("[handleCreateTable] colMatch", { colMatch });
+    if (colMatch && /^\s*$/.test(colMatch[3])) {
+      log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
+      db.set(tableKey, { columns: [], rows: [] });
       return {
         success: true,
         results: [],
         meta: {
           duration: 0,
-          size_after: db.get(tableKey)?.rows.length ?? 0,
+          size_after: 0,
           rows_read: 0,
           rows_written: 0,
           last_row_id: 0,
-          changed_db: false,
+          changed_db: true,
           changes: 0,
         },
       };
     }
-    log.error("Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
-    throw d1Error('GENERIC', `Table already exists: ${tableName}`);
-  }
-  log.debug("Parsing CREATE TABLE", { sql });
-  // Parse columns from CREATE TABLE statement (robust: match quoted/unquoted table names, allow whitespace)
-  // Accepts: CREATE TABLE [IF NOT EXISTS] <table> (col1 TYPE, col2 TYPE, ...)
-  const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
-  let columns: { name: string; quoted: boolean, original: string }[] = [];
-  // If columns section is missing, allow (SQLite-compatible, but no schema row)
-  if (!colMatch) {
-    log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
-    // If the SQL is just 'CREATE TABLE' or otherwise malformed, throw UNSUPPORTED_SQL
-    if (/^create table\s*$/i.test(sql.trim())) {
-      throw d1Error('UNSUPPORTED_SQL');
-    }
-    db.set(tableKey, { columns: [], rows: [] });
-    log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
-    return {
-      success: true,
-      results: [],
-      meta: {
-        duration: 0,
-        size_after: 0,
-        rows_read: 0,
-        rows_written: 0,
-        last_row_id: 0,
-        changed_db: true,
-        changes: 0,
-      },
-    };
-  }
-  // If columns section is present but empty (CREATE TABLE foo ()), allow: create empty table (no columns)
-  if (colMatch && /^\s*$/.test(colMatch[3])) {
-    log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
-    db.set(tableKey, { columns: [], rows: [] });
-    return {
-      success: true,
-      results: [],
-      meta: {
-        duration: 0,
-        size_after: 0,
-        rows_read: 0,
-        rows_written: 0,
-        last_row_id: 0,
-        changed_db: true,
-        changes: 0,
-      },
-    };
-  }
-  // If columns section is present but empty (CREATE TABLE foo ()), throw MALFORMED_CREATE
-  if (/^\s*$/.test(colMatch[3])) {
-    throw d1Error('MALFORMED_CREATE', 'must define at least one column');
-  }
-  // If columns section is missing, allow (SQLite-compatible, but no schema row)
-  if (!colMatch[3]) {
-    db.set(tableKey, { columns: [], rows: [] });
-    log.info("Created empty table (no columns)", { tableKey });
-    return {
-      success: true,
-      results: [],
-      meta: {
-        duration: 0,
-        size_after: 0,
-        rows_read: 0,
-        rows_written: 0,
-        last_row_id: 0,
-        changed_db: true,
-        changes: 0,
-      },
-    };
-  }
-  // Parse columns, preserving quoted/unquoted distinction
-  columns = colMatch[3].split(",").map(s => {
-    const trimmed = s.trim();
-    // Match quoted identifier (double quotes, backticks, or square brackets)
-    const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
-    if (quotedMatch) {
-      return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
-    } else {
-      // Unquoted: take up to first whitespace (for type)
-      const name = trimmed.split(/\s+/)[0].toLowerCase();
-      return { original: name, name, quoted: false };
-    }
-  }).filter(c => c.name);
-  log.debug("[handleCreateTable] Parsed columns", { columns });
-  if (columns.length === 0 || columns.some(c => !c.name)) {
-    throw d1Error('MALFORMED_CREATE', 'must define at least one column');
-  }
-  // Check for duplicate columns
-  const seenUnquoted = new Set<string>();
-  const seenQuoted = new Set<string>();
-  for (const col of columns) {
-    if (col.quoted) {
-      if (seenQuoted.has(col.name)) {
-        log.error("[handleCreateTable] Duplicate quoted column in CREATE TABLE", { tableKey, col });
-        throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
+    if (!colMatch) {
+      log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
+      if (/^create table\s*$/i.test(sql.trim())) {
+        throw d1Error('UNSUPPORTED_SQL');
       }
-      seenQuoted.add(col.name);
-    } else {
-      const lower = col.name.toLowerCase();
-      if (seenUnquoted.has(lower)) {
-        log.error("[handleCreateTable] Duplicate unquoted column in CREATE TABLE", { tableKey, col });
-        throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
-      }
-      seenUnquoted.add(lower);
+      db.set(tableKey, { columns: [], rows: [] });
+      log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
+      return {
+        success: true,
+        results: [],
+        meta: {
+          duration: 0,
+          size_after: 0,
+          rows_read: 0,
+          rows_written: 0,
+          last_row_id: 0,
+          changed_db: true,
+          changes: 0,
+        },
+      };
     }
+    // Parse columns, preserving quoted/unquoted distinction
+    let columns = colMatch[3].split(",").map(s => {
+      const trimmed = s.trim();
+      const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+      if (quotedMatch) {
+        return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };
+      } else {
+        const name = trimmed.split(/\s+/)[0].toLowerCase();
+        return { original: name, name, quoted: false };
+      }
+    }).filter(c => c.name);
+    log.debug("[handleCreateTable] Parsed columns", { columns });
+    if (columns.length === 0 || columns.some(c => !c.name)) {
+      log.error("[handleCreateTable] MALFORMED_CREATE: must define at least one column", { columns });
+      throw d1Error('MALFORMED_CREATE', 'must define at least one column');
+    }
+    // Check for duplicate columns
+    const seenUnquoted = new Set<string>();
+    const seenQuoted = new Set<string>();
+    for (const col of columns) {
+      if (col.quoted) {
+        if (seenQuoted.has(col.name)) {
+          log.error("[handleCreateTable] Duplicate quoted column in CREATE TABLE", { tableKey, col });
+          throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
+        }
+        seenQuoted.add(col.name);
+      } else {
+        const lower = col.name.toLowerCase();
+        if (seenUnquoted.has(lower)) {
+          log.error("[handleCreateTable] Duplicate unquoted column in CREATE TABLE", { tableKey, col });
+          throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
+        }
+        seenUnquoted.add(lower);
+      }
+    }
+    db.set(tableKey, { columns, rows: [] });
+    log.info("[handleCreateTable] Created table with columns", { tableKey, columns: columns.map(c => c.name) });
+    return {
+      success: true,
+      results: [],
+      meta: {
+        duration: 0,
+        size_after: 0,
+        rows_read: 0,
+        rows_written: 0,
+        last_row_id: 0,
+        changed_db: true,
+        changes: 0,
+      },
+    };
+  } catch (err) {
+    log.error("[handleCreateTable] Exception thrown", { sql, err });
+    throw err;
   }
-  // Store columns in the new backend shape, no schema row
-  db.set(tableKey, { columns, rows: [] });
-  log.debug("schema after create", {
-    tableKey,
-    columns: columns.map(c => ({ name: c.name, quoted: c.quoted })),
-  });
-  log.info("[handleCreateTable] Created table with columns", { tableKey, columns: columns.map(c => c.name) });
-  return {
-    success: true,
-    results: [],
-    meta: {
-      duration: 0,
-      size_after: 0,
-      rows_read: 0,
-      rows_written: 0,
-      last_row_id: 0,
-      changed_db: true,
-      changes: 0,
-    },
-  };
 }
