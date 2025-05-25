@@ -30,15 +30,18 @@ export function handleAlterTableAddColumn(
     log.error("Malformed ALTER TABLE ADD COLUMN statement (regex)", { sql });
     throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
   }
-  let col: string, quoted: boolean, type: string | undefined;
-  if (colMatch[2]) {
-    col = colMatch[2];
-    quoted = true;
-    type = colMatch[3];
-  } else {
-    col = colMatch[1];
-    quoted = false;
-    type = colMatch[2];
+  let colDef = colMatch[2] ? colMatch[2] : colMatch[1];
+  // Parse column/type, do not treat type as a column
+  let col = colDef.trim();
+  let quoted = false;
+  let colName = col;
+  let type = '';
+  // Match quoted or unquoted column name and type
+  const match = col.match(/^([`"\[])?([^`"\]\s]+)\1?\s*(.*)$/);
+  if (match) {
+    quoted = !!match[1];
+    colName = match[2];
+    type = match[3] ? match[3].trim() : '';
   }
   const tableKey = findTableKey(db, tableName);
   log.debug("handleAlterTableAddColumn tableKey", { tableName, tableKey });
@@ -77,19 +80,19 @@ export function handleAlterTableAddColumn(
   }
   // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
   const hasDuplicate = columnsArr.some(c =>
-    (quoted && c.quoted && c.name === col) ||
-    (!quoted && !c.quoted && c.name.toLowerCase() === col.toLowerCase())
+    (quoted && c.quoted && c.name === colName) ||
+    (!quoted && !c.quoted && c.name.toLowerCase() === colName.toLowerCase())
   );
   if (hasDuplicate) {
-    log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col, quoted });
-    throw d1Error('GENERIC', `Column already exists: ${col}`);
+    log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted });
+    throw d1Error('GENERIC', `Column already exists: ${colName}`);
   }
   // Add column to schema
   if (Array.isArray(tableObj.columns)) {
-    tableObj.columns.push({ original: quoted ? `"${col}"` : col, name: col, quoted });
+    tableObj.columns.push({ original: quoted ? `"${colName}"` : colName, name: colName, quoted });
   } else {
     // Legacy object shape
-    (tableObj.columns as any)[quoted ? col : col.toLowerCase()] = null;
+    (tableObj.columns as any)[quoted ? colName : colName.toLowerCase()] = null;
   }
   // Add column to all data rows
   let previewRow: D1Row | undefined;
@@ -97,9 +100,9 @@ export function handleAlterTableAddColumn(
   for (const row of filterSchemaRow(tableObj.rows)) {
     if (!row) throw d1Error('TABLE_NOT_FOUND', tableName);
     if (quoted) {
-      if (!Object.prototype.hasOwnProperty.call(row, col)) row[col] = null;
+      if (!Object.prototype.hasOwnProperty.call(row, colName)) row[colName] = null;
     } else {
-      const colKey = col.toLowerCase();
+      const colKey = colName.toLowerCase();
       if (!Object.prototype.hasOwnProperty.call(row, colKey)) {
         row[colKey] = null;
       }
@@ -114,11 +117,11 @@ export function handleAlterTableAddColumn(
   if (previewRowSet) {
     log.debug("handleAlterTableAddColumn preview row after add", {
       previewRow,
-      addedCol: quoted ? col : col.toLowerCase(),
+      addedCol: quoted ? colName : colName.toLowerCase(),
       quoted,
     });
   }
-  log.info("ALTER TABLE ADD COLUMN complete", { tableKey, col, schemaKeys: Object.keys(tableObj.columns), schemaRow: { ...tableObj.columns } });
+  log.info("ALTER TABLE ADD COLUMN complete", { tableKey, col: colName, schemaKeys: Object.keys(tableObj.columns), schemaRow: { ...tableObj.columns } });
   return {
     success: true,
     results: [],

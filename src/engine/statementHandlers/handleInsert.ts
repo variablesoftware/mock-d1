@@ -135,7 +135,7 @@ export function handleInsert(
 
   // Throw if column/value count mismatch
   if (columns.length !== values.length || columns.length === 0) {
-    throw d1Error('MALFORMED_INSERT');
+    throw d1Error('MALFORMED_INSERT', 'Column/value count mismatch in INSERT');
   }
   // Throw if duplicate column names (only check once here)
   const seenUnquoted = new Set<string>();
@@ -155,7 +155,7 @@ export function handleInsert(
     }
   }
   // If all values are undefined, skip insert and return success
-  if (values.every(v => typeof v === 'undefined')) {
+  if (values.every(v => v === undefined || v === null || v === 'undefined' || v === 'null')) {
     return { success: true, results: [], meta: { changes: 0, rows_written: 0, last_row_id: tableData.rows.length } };
   }
 
@@ -185,6 +185,7 @@ export function handleInsert(
         bindName,
         valueExpr,
       });
+      // Always throw MISSING_BIND for missing bind arguments at runtime
       throw d1Error('MISSING_BIND', columns[i] ? columns[i].name : bindName);
     }
   }

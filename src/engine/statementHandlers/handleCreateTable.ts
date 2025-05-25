@@ -84,24 +84,8 @@ export function handleCreateTable(
     }
     if (!colMatch) {
       log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
-      if (/^create table\s*$/i.test(sql.trim())) {
-        throw d1Error('UNSUPPORTED_SQL');
-      }
-      db.set(tableKey, { columns: [], rows: [] });
-      log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
-      return {
-        success: true,
-        results: [],
-        meta: {
-          duration: 0,
-          size_after: 0,
-          rows_read: 0,
-          rows_written: 0,
-          last_row_id: 0,
-          changed_db: true,
-          changes: 0,
-        },
-      };
+      // Always throw UNSUPPORTED_SQL for malformed CREATE
+      throw d1Error('UNSUPPORTED_SQL');
     }
     // Parse columns, preserving quoted/unquoted distinction
     let columns = colMatch[3].split(",").map(s => {
@@ -116,8 +100,8 @@ export function handleCreateTable(
     }).filter(c => c.name);
     log.debug("[handleCreateTable] Parsed columns", { columns });
     if (columns.length === 0 || columns.some(c => !c.name)) {
-      log.error("[handleCreateTable] MALFORMED_CREATE: must define at least one column", { columns });
-      throw d1Error('MALFORMED_CREATE', 'must define at least one column');
+      log.error("[handleCreateTable] UNSUPPORTED_SQL: must define at least one column", { columns });
+      throw d1Error('UNSUPPORTED_SQL', 'must define at least one column');
     }
     // Check for duplicate columns
     const seenUnquoted = new Set<string>();
