@@ -71,6 +71,15 @@ export function handleAlterTableAddColumn(
   }
   // Throw if column name is missing (malformed SQL)
   if (!colName || colName === 'ADD' || colName === 'COLUMN') {
+    log.error("Malformed ALTER TABLE ADD COLUMN (missing or invalid column name)", {
+      sql,
+      tableKey,
+      colTypeDef,
+      colName,
+      quotedCol,
+      VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+      VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+    });
     throw d1Error('UNSUPPORTED_SQL');
   }
   // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
@@ -79,7 +88,13 @@ export function handleAlterTableAddColumn(
     (!quotedCol && !c.quoted && c.name.toLowerCase() === colName.toLowerCase())
   );
   if (hasDuplicate) {
-    log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted: quotedCol });
+    log.error("Duplicate column in ALTER TABLE ADD COLUMN", {
+      tableKey,
+      col: colName,
+      quoted: quotedCol,
+      VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+      VITEST_WORKER_ID: process.env.VITEST_WORKER_ID
+    });
     throw d1Error('UNSUPPORTED_SQL');
   }
   // Throw for unsupported column types (simulate D1 strictness)
