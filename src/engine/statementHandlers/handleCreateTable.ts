@@ -142,6 +142,7 @@ export function handleCreateTable(
     };
   } catch (err) {
     log.error("Exception thrown", { sql, err });
+    // Always re-throw errors so that the promise is rejected and tests can catch them
     throw err;
   }
 }

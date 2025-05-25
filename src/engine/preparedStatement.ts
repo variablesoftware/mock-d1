@@ -230,7 +230,19 @@ export function createPreparedStatement(
      */
     async run(_args?: unknown) {
       const result = parseAndRun("run");
-      if (!result) throw new Error("Handler did not return a result object");
+      log.debug('[preparedStatement.run] result', { result });
+      if (result && result.success === false) {
+        log.debug('[preparedStatement.run] result.error', { error: result.error });
+        if (result.error) {
+          log.debug('[preparedStatement.run] result.error.message', { message: result.error.message });
+        }
+        if (result.error && /Missing bind argument/i.test(result.error.message || '')) {
+          log.debug('[preparedStatement.run] throwing MISSING_BIND');
+          throw d1Error('MISSING_BIND');
+        }
+        log.debug('[preparedStatement.run] throwing UNSUPPORTED_SQL');
+        throw d1Error('UNSUPPORTED_SQL');
+      }
       return result;
     },
     /**
@@ -239,7 +251,19 @@ export function createPreparedStatement(
      */
     async all(_args?: unknown) {
       const result = parseAndRun("all");
-      if (!result) throw new Error("Handler did not return a result object");
+      log.debug('[preparedStatement.all] result', { result });
+      if (result && result.success === false) {
+        log.debug('[preparedStatement.all] result.error', { error: result.error });
+        if (result.error) {
+          log.debug('[preparedStatement.all] result.error.message', { message: result.error.message });
+        }
+        if (result.error && /Missing bind argument/i.test(result.error.message || '')) {
+          log.debug('[preparedStatement.all] throwing MISSING_BIND');
+          throw d1Error('MISSING_BIND');
+        }
+        log.debug('[preparedStatement.all] throwing UNSUPPORTED_SQL');
+        throw d1Error('UNSUPPORTED_SQL');
+      }
       return result;
     },
     /**
@@ -248,7 +272,19 @@ export function createPreparedStatement(
      */
     async first(_args?: unknown) {
       const result = parseAndRun("first");
-      if (!result) throw new Error("Handler did not return a result object");
+      log.debug('[preparedStatement.first] result', { result });
+      if (result && result.success === false) {
+        log.debug('[preparedStatement.first] result.error', { error: result.error });
+        if (result.error) {
+          log.debug('[preparedStatement.first] result.error.message', { message: result.error.message });
+        }
+        if (result.error && /Missing bind argument/i.test(result.error.message || '')) {
+          log.debug('[preparedStatement.first] throwing MISSING_BIND');
+          throw d1Error('MISSING_BIND');
+        }
+        log.debug('[preparedStatement.first] throwing UNSUPPORTED_SQL');
+        throw d1Error('UNSUPPORTED_SQL');
+      }
       return result;
     },
     /**
