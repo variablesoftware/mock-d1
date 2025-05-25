@@ -29,13 +29,13 @@ export function handleCreateTable(
     return handleAlterTableDropColumn();
   }
 
-  log.debug("[handleCreateTable] Entered", { sql });
+  log.debug("Entered", { sql });
   // Use shared utility for table name extraction and normalization
   try {
     const tableName = extractTableName(sql, 'CREATE');
     const tableKey = normalizeTableName(tableName);
-    log.debug("[handleCreateTable] Table name extracted", { tableName, tableKey });
-    log.debug("[handleCreateTable] Existence check", {
+    log.debug("Table name extracted", { tableName, tableKey });
+    log.debug("Existence check", {
       sql,
       tableName,
       tableKey,
@@ -45,7 +45,7 @@ export function handleCreateTable(
     });
     if (db.has(tableKey)) {
       if (/if not exists/i.test(sql)) {
-        log.info("[handleCreateTable] IF NOT EXISTS: table already exists, skipping", { tableName, tableKey });
+        log.info("IF NOT EXISTS: table already exists, skipping", { tableName, tableKey });
         return {
           success: true,
           results: [],
@@ -60,14 +60,14 @@ export function handleCreateTable(
           },
         };
       }
-      log.error("[handleCreateTable] Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
+      log.error("Table already exists", { tableName, tableKey, sql, dbKeys: Array.from(db.keys()) });
       throw d1Error('GENERIC', `Table already exists: ${tableName}`);
     }
     const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
-    log.debug("[handleCreateTable] colMatch", { colMatch });
+    log.debug("colMatch", { colMatch });
     // Allow empty parens as valid (CREATE TABLE foo ())
     if (colMatch && /^\s*$/.test(colMatch[3])) {
-      log.info("[handleCreateTable] Created empty table (no columns)", { tableKey });
+      log.info("Created empty table (no columns)", { tableKey });
       db.set(tableKey, { columns: [], rows: [] });
       return {
         success: true,
@@ -84,7 +84,7 @@ export function handleCreateTable(
       };
     }
     if (!colMatch) {
-      log.error("[handleCreateTable] Malformed CREATE TABLE (no parens or invalid)", { sql });
+      log.error("Malformed CREATE TABLE (no parens or invalid)", { sql });
       throw d1Error('UNSUPPORTED_SQL');
     }
     // Parse columns, preserving quoted/unquoted distinction
@@ -98,32 +98,28 @@ export function handleCreateTable(
         return { original: name, name, quoted: false };
       }
     }).filter(c => c.name);
-    log.debug("[handleCreateTable] Parsed columns", { columns });
-    if (columns.length === 0 || columns.some(c => !c.name)) {
-      log.error("[handleCreateTable] UNSUPPORTED_SQL: must define at least one column", { columns });
-      throw d1Error('UNSUPPORTED_SQL', 'must define at least one column');
-    }
+    log.debug("Parsed columns", { columns });
     // Check for duplicate columns
     const seenUnquoted = new Set<string>();
     const seenQuoted = new Set<string>();
     for (const col of columns) {
       if (col.quoted) {
         if (seenQuoted.has(col.name)) {
-          log.error("[handleCreateTable] Duplicate quoted column in CREATE TABLE", { tableKey, col });
+          log.error("Duplicate quoted column in CREATE TABLE", { tableKey, col });
           throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
         }
         seenQuoted.add(col.name);
       } else {
         const lower = col.name.toLowerCase();
         if (seenUnquoted.has(lower)) {
-          log.error("[handleCreateTable] Duplicate unquoted column in CREATE TABLE", { tableKey, col });
+          log.error("Duplicate unquoted column in CREATE TABLE", { tableKey, col });
           throw d1Error('GENERIC', `Duplicate column in CREATE TABLE: ${col.name}`);
         }
         seenUnquoted.add(lower);
       }
     }
     db.set(tableKey, { columns, rows: [] });
-    log.info("[handleCreateTable] Created table with columns", { tableKey, columns: columns.map(c => c.name) });
+    log.info("Created table with columns", { tableKey, columns: columns.map(c => c.name) });
     return {
       success: true,
       results: [],
@@ -138,7 +134,7 @@ export function handleCreateTable(
       },
     };
   } catch (err) {
-    log.error("[handleCreateTable] Exception thrown", { sql, err });
+    log.error("Exception thrown", { sql, err });
     throw err;
   }
 }

@@ -51,7 +51,7 @@ export function handleDelete(
     for (const name of bindNames) {
       if (!(Object.keys(bindArgs).some(k => k.toLowerCase() === name.toLowerCase()))) {
         if (isDebug) log.error("Missing bind argument in DELETE", { name, sql, bindArgs: summarizeValue(bindArgs) });
-        throw new Error(`Missing bind argument: ${name}`);
+        throw d1Error('MISSING_BIND', name);
       }
     }
     // Normalize bindArgs keys to lower-case for WHERE matching

@@ -70,7 +70,7 @@ export function handleAlterTableAddColumn(
     type = colTypeDef.slice(colName.length).trim();
   }
   // Throw if column name is missing (malformed SQL)
-  if (!colName) {
+  if (!colName || colName === 'ADD' || colName === 'COLUMN') {
     throw d1Error('UNSUPPORTED_SQL');
   }
   // Check for duplicate columns (case-sensitive for quoted, case-insensitive for unquoted)
@@ -80,7 +80,7 @@ export function handleAlterTableAddColumn(
   );
   if (hasDuplicate) {
     log.error("Duplicate column in ALTER TABLE ADD COLUMN", { tableKey, col: colName, quoted: quotedCol });
-    throw d1Error('GENERIC', `Column already exists: ${colName}`);
+    throw d1Error('GENERIC', `Duplicate column in ALTER TABLE ADD COLUMN: ${colName}`);
   }
   // Throw for unsupported column types (simulate D1 strictness)
   if (type && !/^(text|integer|real|blob|numeric)$/i.test(type)) {
