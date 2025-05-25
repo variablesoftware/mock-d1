@@ -25,20 +25,21 @@ export function handleAlterTableAddColumn(
   }
   // Parse column name and quoted status
   // Accepts double quotes, backticks, or square brackets for quoted identifiers
-  const colMatch = sql.match(/add column\s+([`"[])(.+?)\1(?:\s+(\w+))?/i) || sql.match(/add column\s+(\w+)(?:\s+(\w+))?/i);
+  const colMatch = sql.match(/add column\s+([`"\[])(.+?)\1\s+(\w+)/i) || sql.match(/add column\s+(\w+)\s+(\w+)/i);
   if (!colMatch) {
     log.error("Malformed ALTER TABLE ADD COLUMN statement (regex)", { sql });
     throw new Error("Malformed ALTER TABLE ADD COLUMN statement.");
   }
-  let col: string, quoted: boolean;
+  let col: string, quoted: boolean, type: string | undefined;
   if (colMatch[2]) {
     col = colMatch[2];
     quoted = true;
+    type = colMatch[3];
   } else {
     col = colMatch[1];
     quoted = false;
+    type = colMatch[2];
   }
-  const type = colMatch[3] || colMatch[2] && colMatch[3];
   const tableKey = findTableKey(db, tableName);
   log.debug("handleAlterTableAddColumn tableKey", { tableName, tableKey });
   log.debug("handleAlterTableAddColumn existence check", {

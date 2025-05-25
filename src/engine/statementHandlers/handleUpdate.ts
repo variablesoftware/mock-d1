@@ -68,7 +68,7 @@ export function handleUpdate(
   log.debug("handleUpdate dataRows (schema row skipped)", { dataRows: dataRows.map(summarizeRow) });
 
   // Strict: only allow updates to columns defined in the schema row
-  const canonicalCols = tableObj && tableObj.columns ? Object.keys(tableObj.columns).map(k => k.toLowerCase()) : [];
+  const canonicalCols = columns.map(c => c.name.toLowerCase());
   if (!canonicalCols.includes(setCol)) {
     throw d1Error('COLUMN_NOT_FOUND', setCol);
   }
@@ -84,7 +84,7 @@ export function handleUpdate(
     if (!whereBindKey) throw new Error(`Missing bind argument: ${whereBind}`);
     // Use canonical columns from schema row for column matching, normalized
     const matchResults = dataRows.map((row, i) => {
-      const normRow = normalizeRowToSchema(tableObj!.columns, row);
+      const normRow = normalizeRowToSchema(columns, row);
       const whereAst = parseWhereClause(`${whereCol} = :${whereBind}`);
       return { i, row, normRow, matches: evaluateWhereAst(whereAst, normRow, bindArgs) };
     });
@@ -92,7 +92,7 @@ export function handleUpdate(
     if (isDebug) log.debug("before mutation", { tableKey, rows: tableObj?.rows?.map(summarizeRow) });
     try {
       for (const row of dataRows) {
-        const normRow = normalizeRowToSchema(tableObj!.columns, row);
+        const normRow = normalizeRowToSchema(columns, row);
         const rowKeys = Object.keys(row).map(k => k.toLowerCase());
         const whereRowKey = canonicalCols.find(k => k === whereCol) || rowKeys.find(k => k === whereCol);
         let setRowKey = canonicalCols.find(k => k === setCol) || rowKeys.find(k => k === setCol);

@@ -133,6 +133,28 @@ export function handleInsert(
   }
   const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
 
+  // Throw if column/value count mismatch
+  if (columns.length !== values.length || columns.length === 0) {
+    throw d1Error('MALFORMED_INSERT');
+  }
+  // Throw if duplicate column names (only check once here)
+  const seenUnquoted = new Set<string>();
+  const seenQuoted = new Set<string>();
+  for (const col of columns) {
+    if (col.quoted) {
+      if (seenQuoted.has(col.name)) {
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenQuoted.add(col.name);
+    } else {
+      const lower = col.name.toLowerCase();
+      if (seenUnquoted.has(lower)) {
+        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
+      }
+      seenUnquoted.add(lower);
+    }
+  }
+
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names
   const bindKeys = Object.keys(bindArgs);
   const normBindArgs = Object.fromEntries(bindKeys.map(k => [k.toLowerCase(), bindArgs[k]]));
@@ -161,30 +183,6 @@ export function handleInsert(
       });
       throw d1Error('MISSING_BIND', columns[i] ? columns[i].name : bindName);
     }
-  }
-
-  // Enforce column name uniqueness (quoted/unquoted rules)
-  const seenUnquoted = new Set<string>();
-  const seenQuoted = new Set<string>();
-  for (const col of columns) {
-    if (col.quoted) {
-      if (seenQuoted.has(col.name)) {
-        log.error("Duplicate quoted column name in INSERT", { columns });
-        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
-      }
-      seenQuoted.add(col.name);
-    } else {
-      const lower = col.name.toLowerCase();
-      if (seenUnquoted.has(lower)) {
-        log.error("Duplicate unquoted column name in INSERT", { columns });
-        throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
-      }
-      seenUnquoted.add(lower);
-    }
-  }
-  if (columns.length !== values.length || columns.length === 0) {
-    log.error("column/value count mismatch", { columns, values });
-    throw d1Error('MALFORMED_INSERT');
   }
 
   // Build row using bind parameter names from VALUES clause

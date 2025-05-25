@@ -74,9 +74,9 @@ export function createPreparedStatement(
     // CREATE TABLE <name> (<columns>)
     const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
     if (!match) {
-      // For malformed CREATE TABLE, throw UNSUPPORTED_SQL to match test expectations
       throw d1Error('UNSUPPORTED_SQL');
     }
+    // Do not throw for missing bind arguments or malformed columns here
   }
   if (upperSql.startsWith("SELECT")) {
     // SELECT must have at least: SELECT <columns> FROM <table>
