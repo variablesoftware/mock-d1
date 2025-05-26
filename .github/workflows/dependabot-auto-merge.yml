@@ -50,7 +50,7 @@ jobs:
         run: yarn dlx lcov-summary coverage/lcov.info > coverage/coverage-summary.md
       - name: Commit markdown summary
         run: |
-          git add coverage/coverage-summary.md
+          git add -f coverage/coverage-summary.md
           git commit -m "🧪 chore(coverage): update markdown summary [skip ci]" || echo "No changes to commit"
           git push
         env:
