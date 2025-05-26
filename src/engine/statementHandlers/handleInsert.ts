@@ -75,7 +75,7 @@ export function handleInsert(
   const columns = colMatch[3]
     ? colMatch[3].split(",").map(s => {
         const trimmed = s.trim();
-        const quotedMatch = trimmed.match(/^([`"])(.+)\1/);
+        const quotedMatch = trimmed.match(/^([`"[])(.+)\1/);
         if (quotedMatch) {
           return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
         } else {
@@ -120,7 +120,7 @@ export function handleInsert(
     }
   }
   // 3. Skip insert if all values are undefined/null (including bind values)
-  if (values.every((v) => {
+  if (values.every((v, _i) => {
     const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
     if (bindMatch) {
       const bindName = bindMatch[1];
@@ -130,7 +130,7 @@ export function handleInsert(
     return v === undefined || v === null || v === 'undefined' || v === 'null';
   })) {
     // Check if any bind placeholder is missing as a key in bindArgs
-    const missingBind = values.some((v) => {
+    const missingBind = values.some((v, _i) => {
       const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
       if (bindMatch) {
         const bindName = bindMatch[1];
@@ -175,7 +175,7 @@ export function handleInsert(
     const columns = colMatch && colMatch[3]
       ? colMatch[3].split(",").map(s => {
           const trimmed = s.trim();
-          const quotedMatch = trimmed.match(/^([`"])(.+)\1/);
+          const quotedMatch = trimmed.match(/^([`"[])(.+)\1/);
           if (quotedMatch) {
             return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
           } else {

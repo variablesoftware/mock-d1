@@ -58,7 +58,7 @@ export function handleAlterTableAddColumn(
   let colName = '';
   let type = '';
   let colTypeDef = sql.match(/add column\s+(.+)$/i)?.[1] || '';
-  const match = /ADD COLUMN\s+(?:IF NOT EXISTS\s+)?([\w"`]+)\s+([\w()\s]+)/i.exec(sql);
+  const match = colTypeDef.match(/^([`"[])?([^`"\]\s]+)\1?\s*(.*)$/);
   if (match) {
     quotedCol = !!match[1];
     colName = match[2];
@@ -102,9 +102,9 @@ export function handleAlterTableAddColumn(
   if (Array.isArray(tableObj.columns)) {
     tableObj.columns.push({ original: quotedCol ? `"${colName}"` : colName, name: colName, quoted: quotedCol });
   } else {
-    // Legacy object shape (test helpers)
-    // Fix: assert type for legacy object
-    (tableObj.columns as Record<string, unknown>)[quotedCol ? colName : colName.toLowerCase()] = null;
+    // For unquoted, use lowercased key; for quoted, use exact key
+    const key = quotedCol ? colName : colName.toLowerCase();
+    (tableObj.columns as Record<string, unknown>)[key] = null;
   }
   // Re-fetch columnsArr after schema mutation
   if (Array.isArray(tableObj.columns)) {

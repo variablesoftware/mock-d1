@@ -89,16 +89,21 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
     throw d1Error('UNSUPPORTED_SQL', 'Malformed WHERE clause: ends with operator');
   }
   // Accept unquoted/quoted column names and numbers/strings/binds as values
-  const eq = trimmed.match(/^([`"[]?\w+[`\]]?)\s*=\s*(:\w+|'.*?'|".*?"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/i);
+  // Accepts: foo = 1, "foo" = 'bar', [foo] = :bind, etc.
+  const eq = trimmed.match(/^([`"[]?\w+[`"\]]?)\s*=\s*(:(\w+)|'(.*?)'|"(.*?)"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/i);
   if (eq) {
+    let value: unknown = eq[2];
+    if (eq[3]) value = ':' + eq[3]; // bind
+    else if (eq[4] !== undefined) value = eq[4]; // single-quoted string
+    else if (eq[5] !== undefined) value = eq[5]; // double-quoted string
     return {
       type: 'comparison',
       column: eq[1],
       operator: '=',
-      value: eq[2],
+      value,
     };
   }
-  const isNull = trimmed.match(/^([`"[]?\w+[`\]]?)\s+IS\s+(NOT\s+)?NULL$/i);
+  const isNull = trimmed.match(/^([`"[]?\w+[`"\]]?)\s+IS\s+(NOT\s+)?NULL$/i);
   if (isNull) {
     return {
       type: 'isNull',
