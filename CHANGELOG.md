@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/variablesoftware/mock-d1/compare/v0.3.0...v0.3.1) (2025-05-26)
+
+
+### Bug Fixes
+
+* **coverage:** force add markdown summary to ensure commit ([64fb9b7](https://github.com/variablesoftware/mock-d1/commit/64fb9b76d7b846b4df45462f4a41cdf41804a109))
+
 # [0.3.0](https://github.com/variablesoftware/mock-d1/compare/v0.2.2...v0.3.0) (2025-05-26)
 
 
