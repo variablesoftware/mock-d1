@@ -48,9 +48,9 @@ jobs:
       - run: yarn vitest --coverage
       - name: Generate markdown coverage summary
         run: yarn dlx lcov-summary coverage/lcov.info > coverage/coverage-summary.md
-      - name: Set up git authentication
-        run: |
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+      #- name: Set up git authentication
+      #  run: |
+      #    git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
       - name: Set git user
         run: |
           git config user.name "github-actions[bot]"
