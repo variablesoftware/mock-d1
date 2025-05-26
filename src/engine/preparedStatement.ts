@@ -152,9 +152,15 @@ export function createPreparedStatement(
       // Default: throw for unsupported SQL
       throw d1Error('UNSUPPORTED_SQL');
     } catch (err: any) {
-      // Centralize missing bind error reporting
-      if (err && typeof err.message === 'string' && /Missing bind argument/.test(err.message)) {
-        throw d1Error('MISSING_BIND');
+      // Only wrap unknown errors; propagate D1 MISSING_BIND errors as-is
+      if (
+        err &&
+        typeof err.message === 'string' &&
+        (err.message.startsWith(D1_ERRORS.MISSING_BIND) ||
+          err.message.startsWith(D1_ERRORS.MISSING_BIND_ARGUMENT) ||
+          err.message.startsWith(D1_ERRORS.MISSING_BIND_PARAMETER))
+      ) {
+        throw err;
       }
       throw err;
     }
@@ -194,7 +200,16 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err) {
+      } catch (err: any) {
+        if (
+          err &&
+          typeof err.message === 'string' &&
+          (err.message.startsWith(D1_ERRORS.MISSING_BIND) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_ARGUMENT) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_PARAMETER))
+        ) {
+          throw err;
+        }
         throw err;
       }
     },
@@ -221,7 +236,16 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err) {
+      } catch (err: any) {
+        if (
+          err &&
+          typeof err.message === 'string' &&
+          (err.message.startsWith(D1_ERRORS.MISSING_BIND) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_ARGUMENT) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_PARAMETER))
+        ) {
+          throw err;
+        }
         throw err;
       }
     },
@@ -248,7 +272,16 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err) {
+      } catch (err: any) {
+        if (
+          err &&
+          typeof err.message === 'string' &&
+          (err.message.startsWith(D1_ERRORS.MISSING_BIND) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_ARGUMENT) ||
+            err.message.startsWith(D1_ERRORS.MISSING_BIND_PARAMETER))
+        ) {
+          throw err;
+        }
         throw err;
       }
     },

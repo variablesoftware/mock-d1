@@ -13,7 +13,7 @@ export function handleTruncateTable(
   db: Map<string, D1TableData>
 ) {
   validateSqlOrThrow(sql);
-  log.debug("handleTruncateTable called", { sql });
+  log.debug("called", { sql });
   let tableName: string;
   try {
     tableName = extractTableName(sql, 'TRUNCATE');
@@ -21,7 +21,7 @@ export function handleTruncateTable(
     throw new Error("Malformed TRUNCATE TABLE statement.");
   }
   const tableKey = findTableKey(db, tableName);
-  log.debug("handleTruncateTable tableKey lookup", { tableName, tableKey });
+  log.debug("tableKey lookup", { tableName, tableKey });
   if (!tableKey) {
     log.error("Table does not exist in the database", { tableName });
     throw d1Error('TABLE_NOT_FOUND', tableName);
