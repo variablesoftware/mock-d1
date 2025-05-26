@@ -25,12 +25,16 @@ yarn add --dev @variablesoftware/mock-d1
 ```ts
 import { mockD1Database } from "@variablesoftware/mock-d1";
 
-const db = mockD1Database({
-  sessions: [{ sub: "user-123", jti: "token-abc", created: Date.now() }],
-});
+const db = mockD1Database();
+await db.inject("sessions", [
+  { name: "sub", original: "sub", quoted: false },
+  { name: "jti", original: "jti", quoted: false },
+  { name: "created", original: "created", quoted: false },
+], [
+  { sub: "user-123", jti: "token-abc", created: Date.now() },
+]);
 
-const stmt = db.prepare("SELECT * FROM sessions WHERE sub = ?");
-stmt.bind("user-123");
+const stmt = db.prepare("SELECT * FROM sessions WHERE sub = :sub").bind({ sub: "user-123" });
 const result = await stmt.all();
 
 console.log(result.results); // [{ sub: 'user-123', ... }]
@@ -47,7 +51,7 @@ console.log(result.results); // [{ sub: 'user-123', ... }]
 ## ✨ Features
 
 - Fully in-memory, no persistent writes
-- SQL-style `.prepare().bind().all()` and `.run()` flow
+- SQL-style `.prepare().bind().all()` and `.run()` flow with **named bind support**
 - Supports mock row injection
 - Isolated per test run
 - Compatible with Vitest and Hono-based Cloudflare Workers
@@ -57,6 +61,22 @@ console.log(result.results); // [{ sub: 'user-123', ... }]
 - Returns results shaped like real Cloudflare `D1Result`
 - **Does not coerce types or values** — faithfully returns your stored inputs
 - Strives for parity with Cloudflare D1 behavior while keeping mocks debuggable
+- **Strict TypeScript and linting compliance** (no `any`, no unused imports, strict types)
+- **Batch support**: `batch()` method matches D1Database interface (mocked)
+- **Accurate error propagation**: throws D1-like errors for missing bind arguments, malformed SQL, and SQL injection attempts
+- **Test coverage for error and injection cases**
+
+---
+
+## 🛡️ Error Handling & D1-like Errors
+
+- Throws errors with messages matching Cloudflare D1 for:
+  - Missing bind arguments
+  - Malformed SQL (including column/value count mismatch)
+  - SQL injection attempts
+  - Unsupported SQL features
+- Errors are propagated in the same order as D1 (e.g., missing bind before malformed insert)
+- All error cases are covered by tests
 
 ---
 
@@ -66,8 +86,10 @@ Tested using `vitest run`, with coverage for:
 
 - The "butter churn" suite stress-tests `mockD1Database()` with randomized insert/select/delete operations to simulate real query volume
 - Basic SELECT queries
-- Parameter binding
+- Parameter binding (named and positional)
 - Return shape matching Cloudflare's `D1Result`
+- Error propagation and ordering (missing bind, malformed SQL, injection)
+- Lint and type safety (no `any`, strict types)
 
 Run tests:
 

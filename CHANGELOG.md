@@ -1,3 +1,25 @@
+# [0.2.0](https://github.com/variablesoftware/mock-d1/compare/v0.1.0...v0.2.0) (2025-05-25)
+
+### Features
+
+* Support for named bind parameters in SQL statements and improved `.bind()` API
+* Accurate error propagation and ordering for missing bind arguments, malformed SQL, and SQL injection attempts (matches D1 behavior)
+* Batch support: `batch()` method now matches the D1Database interface (mocked)
+* Improved D1Result shape and error handling for all statement types
+* Enhanced test coverage for error, injection, and malformed SQL cases
+* Strict TypeScript and linting compliance (no `any`, no unused imports, strict types)
+* Improved documentation and usage examples in README
+
+### Bug Fixes
+
+* Fix error ordering in handleInsert to throw "Missing bind argument" before malformed insert errors
+* Remove all unnecessary escape characters in regexes and empty block statements to pass lint
+* Fix type errors in mockBatch and index to match D1Database interface
+* Remove unused imports and variables across the codebase
+* Ensure all error cases are covered by tests and propagate as expected
+
+---
+
 # [0.1.0](https://github.com/variablesoftware/mock-d1/compare/v0.0.1...v0.1.0) (2025-05-09)
 
 
