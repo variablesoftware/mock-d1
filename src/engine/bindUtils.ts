@@ -13,7 +13,7 @@ import { d1Error } from './errors.js';
 export function validateBindArgs(required: string[], args: Record<string, unknown>): void {
   for (const param of required) {
     if (!(param in args)) {
-      throw d1Error('MISSING_BIND', param);
+      throw new Error('Missing bind argument: ' + param);
     }
   }
 }

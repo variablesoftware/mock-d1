@@ -87,12 +87,23 @@ export function handleInsert(
     : [];
   const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
 
-  // Remove all previous seenUnquoted/seenQuoted declarations above this point
-  // --- RUNTIME VALIDATION (single block, no redeclarations) ---
+  // Check for missing bind arguments BEFORE column/value count mismatch
+  for (let i = 0; i < values.length; i++) {
+    const valueExpr = values[i];
+    const bindMatch = valueExpr.match(/^:(.+)$/);
+    if (bindMatch) {
+      const bindName = bindMatch[1];
+      if (!(bindName in bindArgs)) {
+        throw new Error('Missing bind argument');
+      }
+    }
+  }
+
   // 1. Throw if column/value count mismatch
   if (columns.length !== values.length || columns.length === 0) {
     throw d1Error('MALFORMED_INSERT', 'Column/value count mismatch in INSERT');
   }
+
   // 2. Throw if duplicate column names
   // Only declare here, and do not redeclare above
   const seenUnquotedInsert = new Set<string>();
@@ -116,11 +127,24 @@ export function handleInsert(
     const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
     if (bindMatch) {
       const bindName = bindMatch[1];
-      const arg = bindArgs[bindName];
-      return arg === undefined || arg === null;
+      // Only treat as undefined if the key is present and value is undefined/null
+      return (bindName in bindArgs) ? (bindArgs[bindName] === undefined || bindArgs[bindName] === null) : false;
     }
     return v === undefined || v === null || v === 'undefined' || v === 'null';
   })) {
+    // Check if any bind placeholder is missing as a key in bindArgs
+    const missingBind = values.some((v, i) => {
+      const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
+      if (bindMatch) {
+        const bindName = bindMatch[1];
+        // Only throw if the key is not present at all
+        return !(bindName in bindArgs);
+      }
+      return false;
+    });
+    if (missingBind) {
+      throw new Error('Missing bind argument');
+    }
     let tableName: string = '';
     try {
       tableName = extractTableName(sql, 'INSERT');
@@ -242,7 +266,7 @@ export function handleInsert(
         valueExpr,
       });
       // Always throw MISSING_BIND for missing bind arguments at runtime
-      throw d1Error('MISSING_BIND', columns[i] ? columns[i].name : bindName);
+      throw new Error('Missing bind argument');
     }
   }
 
@@ -279,6 +303,20 @@ export function handleInsert(
   // Guard: do not insert a row if all values are undefined
   const allUndefined = columns.every(col => row[col.quoted ? col.name : col.name.toLowerCase()] === undefined);
   if (allUndefined) {
+    // Check if any value is undefined due to missing bind argument
+    const missingBind = columns.some((col, i) => {
+      const valueExpr = values[i];
+      const bindMatch = valueExpr && typeof valueExpr === 'string' && valueExpr.match(/^:(.+)$/);
+      if (bindMatch) {
+        const bindName = bindMatch[1].toLowerCase();
+        return !(bindName in normBindArgs);
+      }
+      return false;
+    });
+    if (missingBind) {
+      // Always throw the specific error for missing bind argument
+      throw new Error('Missing bind argument');
+    }
     log.warn("Skipping insert of all-undefined row", { tableKey, row });
     return {
       success: false,

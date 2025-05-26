@@ -80,8 +80,8 @@ export function handleUpdate(
     const bindKeys = Object.keys(bindArgs);
     const setBindKey = bindKeys.find(k => k.toLowerCase() === setBind.toLowerCase());
     const whereBindKey = bindKeys.find(k => k.toLowerCase() === whereBind!.toLowerCase());
-    if (!setBindKey) throw d1Error('MISSING_BIND', setBind);
-    if (whereBind && !whereBindKey) throw d1Error('MISSING_BIND', whereBind);
+    if (!setBindKey) throw new Error('Missing bind argument');
+    if (whereBind && !whereBindKey) throw new Error('Missing bind argument');
     // Use canonical columns from schema row for column matching, normalized
     const matchResults = dataRows.map((row, i) => {
       const normRow = normalizeRowToSchema(columns, row);
@@ -124,7 +124,7 @@ export function handleUpdate(
     // No WHERE: update all data rows
     const bindKeys = Object.keys(bindArgs);
     const setBindKeyNoWhere = bindKeys.find(k => k.toLowerCase() === setBind.toLowerCase());
-    if (!setBindKeyNoWhere) throw d1Error('MISSING_BIND', setBind);
+    if (!setBindKeyNoWhere) throw new Error('Missing bind argument');
     // --- Ensure the column exists in all data rows before updating ---
     for (const row of dataRows) {
       const rowKeys = Object.keys(row).map(k => k.toLowerCase());

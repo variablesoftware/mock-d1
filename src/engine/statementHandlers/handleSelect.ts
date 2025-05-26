@@ -128,7 +128,7 @@ export function handleSelect(
         for (const name of bindNames) {
           if (!(name in bindArgs)) {
             if (isDebug) log.error("Missing bind argument in SELECT", { name, sql, bindArgs: summarizeValue(bindArgs) });
-            throw d1Error('MISSING_BIND', name);
+            throw new Error('Missing bind argument');
           }
         }
         const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
@@ -221,7 +221,7 @@ export function handleSelect(
       for (const name of bindNames) {
         if (!(name in bindArgs)) {
           if (isDebug) log.error("Missing bind argument in SELECT", { name, sql, bindArgs: summarizeValue(bindArgs) });
-          throw d1Error('MISSING_BIND', name);
+          throw new Error('Missing bind argument');
         }
       }
       const normBindArgs = Object.fromEntries(Object.entries(bindArgs).map(([k, v]) => [k.toLowerCase(), v]));
