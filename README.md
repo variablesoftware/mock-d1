@@ -3,6 +3,10 @@
 [![Test Suite](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/variablesoftware/mock-d1/actions)
 [![NPM version](https://img.shields.io/npm/v/@variablesoftware/mock-d1?style=flat-square)](https://www.npmjs.com/package/@variablesoftware/mock-d1)
 [![License](https://img.shields.io/github/license/variablesoftware/mock-d1?style=flat-square)](https://github.com/variablesoftware/mock-d1/blob/main/LICENSE.txt)
+[![Coverage](https://img.shields.io/coveralls/github/variablesoftware/mock-d1/main)](https://coveralls.io/github/variablesoftware/mock-d1)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@variablesoftware/mock-d1)](https://bundlephobia.com/package/@variablesoftware/mock-d1)
+[![Downloads](https://img.shields.io/npm/dm/@variablesoftware/mock-d1)](https://www.npmjs.com/package/@variablesoftware/mock-d1)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/variablesoftware/mock-d1/pulls)
 
 **Mock Cloudflare D1 Database for unit and integration testing**
 
