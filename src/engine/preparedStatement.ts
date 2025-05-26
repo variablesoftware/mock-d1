@@ -4,7 +4,7 @@
  * Provides a modular, handler-based mock prepared statement interface.
  */
 
-import { D1Row, MockD1PreparedStatement } from "../types/MockD1Database";
+import { MockD1PreparedStatement } from "../types/MockD1Database";
 import type { D1TableData } from "../types/MockD1Database";
 import { handleUpdate } from "./statementHandlers/handleUpdate.js";
 import { handleInsert } from "./statementHandlers/handleInsert.js";
@@ -18,7 +18,7 @@ import { handleAlterTableAddColumn } from "./statementHandlers/handleAlterTableA
 import { handleAlterTableDropColumn } from './statementHandlers/handleAlterTableDropColumn.js';
 import { log } from "@variablesoftware/logface";
 import { validateSqlOrThrow } from './sqlValidation.js';
-import { d1Error, D1_ERRORS } from './errors.js';
+import { d1Error } from './errors.js';
 import { makeD1Result } from './resultUtils.js';
 import type { FakeD1Result } from "../types/MockD1Database.js";
 // log import removed (was unused)
@@ -151,28 +151,28 @@ export function createPreparedStatement(
 
       // Default: throw for unsupported SQL
       throw d1Error('UNSUPPORTED_SQL');
-    } catch (err: any) {
-      log.error('[preparedStatement][parseAndRun] caught error', { err, message: err?.message, stack: err?.stack });
+    } catch (err: unknown) {
+      log.error('[preparedStatement][parseAndRun] caught error', { err, message: (err as Error)?.message, stack: (err as Error)?.stack });
       // Propagate errors for missing bind arguments and malformed SQL as-is
       if (
         err &&
-        typeof err.message === 'string' &&
-        (/Missing bind argument/i.test(err.message) ||
-         err.message.includes('Malformed'))
+        typeof (err as Error).message === 'string' &&
+        (/Missing bind argument/i.test((err as Error).message) ||
+         (err as Error).message.includes('Malformed'))
       ) {
-        log.error('[preparedStatement][parseAndRun] propagating error as-is', { message: err.message });
+        log.error('[preparedStatement][parseAndRun] propagating error as-is', { message: (err as Error).message });
         throw err;
       }
       // Propagate D1 errors for unsupported/table/column errors as-is
       if (
         err &&
-        typeof err.message === 'string' &&
-        (/Unsupported|Table does not exist|Column does not exist/.test(err.message))
+        typeof (err as Error).message === 'string' &&
+        (/Unsupported|Table does not exist|Column does not exist/.test((err as Error).message))
       ) {
-        log.error('[preparedStatement][parseAndRun] propagating D1 error as-is', { message: err.message });
+        log.error('[preparedStatement][parseAndRun] propagating D1 error as-is', { message: (err as Error).message });
         throw err;
       }
-      log.error('[preparedStatement][parseAndRun] wrapping error as GENERIC', { message: err?.message });
+      log.error('[preparedStatement][parseAndRun] wrapping error as GENERIC', { message: (err as Error)?.message });
       // For all other errors, wrap as a generic D1 error
       throw d1Error('GENERIC');
     }
@@ -213,26 +213,26 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err: any) {
-        log.error('[preparedStatement][run] caught error', { err, message: err?.message, stack: err?.stack });
+      } catch (err: unknown) {
+        log.error('[preparedStatement][run] caught error', { err, message: (err as Error)?.message, stack: (err as Error)?.stack });
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Missing bind argument/i.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Missing bind argument/i.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][run] propagating missing bind argument error', { message: err.message });
+          log.error('[preparedStatement][run] propagating missing bind argument error', { message: (err as Error).message });
           throw err;
         }
         // Propagate D1 errors as-is for Malformed/Unsupported/Table/Column errors
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Malformed|Unsupported|Table does not exist|Column does not exist/.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Malformed|Unsupported|Table does not exist|Column does not exist/.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][run] propagating D1 error as-is', { message: err.message });
+          log.error('[preparedStatement][run] propagating D1 error as-is', { message: (err as Error).message });
           throw err;
         }
-        log.error('[preparedStatement][run] wrapping error as GENERIC', { message: err?.message });
+        log.error('[preparedStatement][run] wrapping error as GENERIC', { message: (err as Error)?.message });
         // For all other errors, wrap as a generic D1 error
         throw d1Error('GENERIC');
       }
@@ -260,25 +260,25 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err: any) {
-        log.error('[preparedStatement][all] caught error', { err, message: err?.message, stack: err?.stack });
+      } catch (err: unknown) {
+        log.error('[preparedStatement][all] caught error', { err, message: (err as Error)?.message, stack: (err as Error)?.stack });
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Missing bind argument/i.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Missing bind argument/i.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][all] propagating missing bind argument error', { message: err.message });
+          log.error('[preparedStatement][all] propagating missing bind argument error', { message: (err as Error).message });
           throw err;
         }
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Malformed|Unsupported|Table does not exist|Column does not exist/.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Malformed|Unsupported|Table does not exist|Column does not exist/.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][all] propagating D1 error as-is', { message: err.message });
+          log.error('[preparedStatement][all] propagating D1 error as-is', { message: (err as Error).message });
           throw err;
         }
-        log.error('[preparedStatement][all] wrapping error as GENERIC', { message: err?.message });
+        log.error('[preparedStatement][all] wrapping error as GENERIC', { message: (err as Error)?.message });
         throw d1Error('GENERIC');
       }
     },
@@ -305,25 +305,25 @@ export function createPreparedStatement(
           throw d1Error('GENERIC');
         }
         return result as FakeD1Result;
-      } catch (err: any) {
-        log.error('[preparedStatement][first] caught error', { err, message: err?.message, stack: err?.stack });
+      } catch (err: unknown) {
+        log.error('[preparedStatement][first] caught error', { err, message: (err as Error)?.message, stack: (err as Error)?.stack });
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Missing bind argument/i.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Missing bind argument/i.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][first] propagating missing bind argument error', { message: err.message });
+          log.error('[preparedStatement][first] propagating missing bind argument error', { message: (err as Error).message });
           throw err;
         }
         if (
           err &&
-          typeof err.message === 'string' &&
-          /Malformed|Unsupported|Table does not exist|Column does not exist/.test(err.message)
+          typeof (err as Error).message === 'string' &&
+          /Malformed|Unsupported|Table does not exist|Column does not exist/.test((err as Error).message)
         ) {
-          log.error('[preparedStatement][first] propagating D1 error as-is', { message: err.message });
+          log.error('[preparedStatement][first] propagating D1 error as-is', { message: (err as Error).message });
           throw err;
         }
-        log.error('[preparedStatement][first] wrapping error as GENERIC', { message: err?.message });
+        log.error('[preparedStatement][first] wrapping error as GENERIC', { message: (err as Error)?.message });
         throw d1Error('GENERIC');
       }
     },

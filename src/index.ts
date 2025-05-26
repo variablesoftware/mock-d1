@@ -38,7 +38,6 @@
 import { log } from "@variablesoftware/logface";
 import { createPreparedStatement } from "./engine/preparedStatement.js";
 import { D1Row, MockD1PreparedStatement, D1Database } from "./types/MockD1Database.js";
-import { mockDump } from "./helpers/mockDump.js";
 import { mockInject } from "./helpers/mockInject.js";
 import { mockBatch } from "./helpers/mockBatch.js";
 

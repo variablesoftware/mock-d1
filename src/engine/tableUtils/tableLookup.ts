@@ -11,7 +11,7 @@ import { log } from '@variablesoftware/logface';
  * @param tableName - The table name to look up.
  * @returns The canonical table key if found, or undefined.
  */
-export function findTableKey(db: Map<string, any>, tableName: string): string | undefined {
+export function findTableKey(db: Map<string, unknown>, tableName: string): string | undefined {
   if (process.env.DEBUG || process.env.MOCK_D1_DEBUG) {
     log.debug('[findTableKey] called', { dbKeys: Array.from(db.keys()), tableName });
   }

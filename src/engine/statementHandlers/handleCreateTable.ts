@@ -1,4 +1,4 @@
-import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { D1TableData } from "../../types/MockD1Database";
 import { extractTableName, normalizeTableName } from '../tableUtils/tableNameUtils.js';
 import { handleAlterTableDropColumn } from './handleAlterTableDropColumn.js';
 import { d1Error } from '../errors.js';
@@ -73,7 +73,7 @@ export function handleCreateTable(
       log.error("Table already exists", { tableName, tableKey, sql });
       throw d1Error('GENERIC', `Table already exists: ${tableName}`);
     }
-    const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"\[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
+    const colMatch = sql.match(/create table\s+(if not exists\s+)?([`"[]?\w+[`"\]]?)\s*\(([^)]*)\)/i);
     log.debug("colMatch", { colMatch });
     log.debug("colMatch after regex", { colMatch });
     if (!colMatch || typeof colMatch[3] !== 'string') {
@@ -113,7 +113,7 @@ export function handleCreateTable(
         const trimmed = s.trim();
         log.debug("Parsing column", { raw: s, trimmed });
         if (!trimmed) return null;
-        const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+        const quotedMatch = trimmed.match(/^([`"[])(.+)\1/);
         if (quotedMatch) {
           log.debug("Column is quoted", { quotedMatch });
           return { original: quotedMatch[0], name: quotedMatch[2], quoted: true };

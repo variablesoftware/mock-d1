@@ -1,9 +1,7 @@
-import { D1Row } from "../../types/MockD1Database";
 import { z, RefinementCtx } from "zod";
-import { findTableKey, filterSchemaRow, summarizeValue, summarizeRow } from "../../helpers/index.js";
+import { findTableKey, summarizeValue } from "../../helpers/index.js";
 import { log } from "@variablesoftware/logface";
 import { extractTableName, normalizeTableName } from '../tableUtils/tableNameUtils.js';
-import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
 import type { D1TableData } from "../../types/MockD1Database";
@@ -77,7 +75,7 @@ export function handleInsert(
   const columns = colMatch[3]
     ? colMatch[3].split(",").map(s => {
         const trimmed = s.trim();
-        const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+        const quotedMatch = trimmed.match(/^([`"])(.+)\1/);
         if (quotedMatch) {
           return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
         } else {
@@ -87,9 +85,8 @@ export function handleInsert(
     : [];
   const values = valuesMatch[1] ? valuesMatch[1].split(",").map(s => s.trim()) : [];
 
-  // Check for missing bind arguments BEFORE column/value count mismatch
-  for (let i = 0; i < values.length; i++) {
-    const valueExpr = values[i];
+  // --- PRIORITIZE: Check for missing bind arguments BEFORE any column/value count mismatch ---
+  for (const valueExpr of values) {
     const bindMatch = valueExpr.match(/^:(.+)$/);
     if (bindMatch) {
       const bindName = bindMatch[1];
@@ -123,7 +120,7 @@ export function handleInsert(
     }
   }
   // 3. Skip insert if all values are undefined/null (including bind values)
-  if (values.every((v, i) => {
+  if (values.every((v) => {
     const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
     if (bindMatch) {
       const bindName = bindMatch[1];
@@ -133,7 +130,7 @@ export function handleInsert(
     return v === undefined || v === null || v === 'undefined' || v === 'null';
   })) {
     // Check if any bind placeholder is missing as a key in bindArgs
-    const missingBind = values.some((v, i) => {
+    const missingBind = values.some((v) => {
       const bindMatch = v && typeof v === 'string' && v.match(/^:(.+)$/);
       if (bindMatch) {
         const bindName = bindMatch[1];
@@ -148,7 +145,7 @@ export function handleInsert(
     let tableName: string = '';
     try {
       tableName = extractTableName(sql, 'INSERT');
-    } catch {}
+    } catch {/* */}
     let tableKey = tableName ? findTableKey(db, tableName) : undefined;
     let tableData = (tableKey && db.has(tableKey)) ? db.get(tableKey) : undefined;
     // D1: no-op insert should return success: false
@@ -178,7 +175,7 @@ export function handleInsert(
     const columns = colMatch && colMatch[3]
       ? colMatch[3].split(",").map(s => {
           const trimmed = s.trim();
-          const quotedMatch = trimmed.match(/^([`"\[])(.+)\1/);
+          const quotedMatch = trimmed.match(/^([`"])(.+)\1/);
           if (quotedMatch) {
             return { name: quotedMatch[2], quoted: true, original: quotedMatch[0] };
           } else {
@@ -242,33 +239,6 @@ export function handleInsert(
   // Accept bind arg names and column names case-insensitively, and allow SQL keywords as names
   const bindKeys = Object.keys(bindArgs);
   const normBindArgs = Object.fromEntries(bindKeys.map(k => [k.toLowerCase(), bindArgs[k]]));
-
-  // Check for missing bind arguments before proceeding, and also check for malformed value expressions
-  for (let i = 0; i < values.length; i++) {
-    const valueExpr = values[i];
-    const bindMatch = valueExpr.match(/^:(.+)$/);
-    if (!bindMatch) {
-      if (isDebug) log.error("Non-bind value in VALUES clause (not supported)", { valueExpr, sql });
-      throw d1Error('MALFORMED_INSERT');
-    }
-    const bindName = bindMatch[1].toLowerCase();
-    if (!(bindName in normBindArgs)) {
-      if (isDebug) log.error("Missing bind argument (diagnostic)", {
-        col: columns[i] ? columns[i].name : undefined,
-        columns,
-        bindKeys,
-        normBindArgsKeys: Object.keys(normBindArgs),
-        schemaKeys: columns.map(c => c.name),
-        sql,
-        bindArgs: summarizeValue(bindArgs),
-        normBindArgs,
-        bindName,
-        valueExpr,
-      });
-      // Always throw MISSING_BIND for missing bind arguments at runtime
-      throw new Error('Missing bind argument');
-    }
-  }
 
   // Build row using bind parameter names from VALUES clause
   const row: Record<string, unknown> = Object.create(null);

@@ -89,7 +89,7 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
     throw d1Error('UNSUPPORTED_SQL', 'Malformed WHERE clause: ends with operator');
   }
   // Accept unquoted/quoted column names and numbers/strings/binds as values
-  const eq = trimmed.match(/^([`"\[]?\w+[`"\]]?)\s*=\s*(:[\w]+|'.*?'|".*?"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/i);
+  const eq = trimmed.match(/^([`"[]?\w+[`\]]?)\s*=\s*(:\w+|'.*?'|".*?"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/i);
   if (eq) {
     return {
       type: 'comparison',
@@ -98,7 +98,7 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
       value: eq[2],
     };
   }
-  const isNull = trimmed.match(/^([`"\[]?\w+[`"\]]?)\s+IS\s+(NOT\s+)?NULL$/i);
+  const isNull = trimmed.match(/^([`"[]?\w+[`\]]?)\s+IS\s+(NOT\s+)?NULL$/i);
   if (isNull) {
     return {
       type: 'isNull',

@@ -3,7 +3,7 @@
  * @description Provides the mock-only `inject` method for mockD1Database.
  * @warning This is a mock/test-only API. Do not use in production. Will emit a warning if called outside test.
  */
-import { D1Row, D1TableData } from '../types/MockD1Database.js';
+import { D1TableData } from '../types/MockD1Database.js';
 import { injectTableRows } from './injectTableRows.js';
 import { log } from '@variablesoftware/logface';
 import type { MockD1TableColumn } from '../types/MockD1Database.js';

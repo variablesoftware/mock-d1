@@ -1,4 +1,4 @@
-import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { D1TableData } from "../../types/MockD1Database";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { log } from "@variablesoftware/logface";
 import { findTableKey } from '../tableUtils/tableLookup.js';

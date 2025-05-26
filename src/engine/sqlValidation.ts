@@ -1,5 +1,5 @@
 import { log } from '@variablesoftware/logface';
-import { d1Error, D1_ERRORS } from './errors.js';
+import { d1Error } from './errors.js';
 
 const UNSUPPORTED_SQL_PATTERNS = [
   /\bIN\b/i,

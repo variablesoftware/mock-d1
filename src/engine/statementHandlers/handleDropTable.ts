@@ -1,5 +1,4 @@
 import type { D1TableData } from "../../types/MockD1Database";
-import { D1Row } from "../../types/MockD1Database";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { findTableKey } from '../tableUtils/tableLookup.js';
 import { d1Error } from '../errors.js';

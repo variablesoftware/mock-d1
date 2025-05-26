@@ -1,8 +1,7 @@
-import { D1Row, D1TableData } from "../../types/MockD1Database";
+import { D1TableData } from "../../types/MockD1Database";
 import { filterSchemaRow } from "../../helpers/index.js";
 import { extractTableName } from '../tableUtils/tableNameUtils.js';
 import { findTableKey } from '../tableUtils/tableLookup.js';
-import { validateRowAgainstSchema, normalizeRowToSchema } from '../tableUtils/schemaUtils.js';
 import { d1Error } from '../errors.js';
 import { validateSqlOrThrow } from '../sqlValidation.js';
 import { log } from "@variablesoftware/logface";
@@ -59,7 +58,7 @@ export function handleAlterTableAddColumn(
   let colName = '';
   let type = '';
   let colTypeDef = sql.match(/add column\s+(.+)$/i)?.[1] || '';
-  const match = colTypeDef.match(/^([`"\[])?([^`"\]\s]+)\1?\s*(.*)$/);
+  const match = /ADD COLUMN\s+(?:IF NOT EXISTS\s+)?([\w"`]+)\s+([\w()\s]+)/i.exec(sql);
   if (match) {
     quotedCol = !!match[1];
     colName = match[2];
@@ -103,7 +102,9 @@ export function handleAlterTableAddColumn(
   if (Array.isArray(tableObj.columns)) {
     tableObj.columns.push({ original: quotedCol ? `"${colName}"` : colName, name: colName, quoted: quotedCol });
   } else {
-    (tableObj.columns as any)[quotedCol ? colName : colName.toLowerCase()] = null;
+    // Legacy object shape (test helpers)
+    // Fix: assert type for legacy object
+    (tableObj.columns as Record<string, unknown>)[quotedCol ? colName : colName.toLowerCase()] = null;
   }
   // Re-fetch columnsArr after schema mutation
   if (Array.isArray(tableObj.columns)) {
