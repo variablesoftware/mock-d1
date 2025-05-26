@@ -48,11 +48,8 @@ jobs:
       - run: corepack enable && corepack prepare yarn@4.9.1 --activate
       - run: yarn install --immutable
       - run: yarn vitest --coverage
-      - name: Generate markdown coverage summary
-        run: yarn dlx lcov-summary coverage/lcov.info > coverage/coverage-summary.md
-      #- name: Set up git authentication
-      #  run: |
-      #    git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+      - name: Generate markdown coverage table
+         run: yarn dlx coverage-badges --output coverage/coverage-summary.md
       - name: Set git user
         run: |
           git config user.name "github-actions[bot]"
