@@ -1,6 +1,6 @@
 {
   "name": "@variablesoftware/mock-d1",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
   "keywords": [
     "cloudflare",
@@ -63,9 +63,10 @@
     "build:test": "yarn clean && yarn build && yarn test",
     "corepack:go": "corepack enable && corepack prepare yarn@4.9.1 --activate",
     "upgrade:latest": "yarn set version stable && yarn upgrade-interactive",
-    ":patch": "yarn version patch",
-    ":minor": "yarn version minor",
-    ":major": "yarn version major",
+    "package:commit": "git commit package.json",
+    ":patch": "yarn version patch && yarn package:commit -m '🗜️ fix: patch release'",
+    ":minor": "yarn version minor && yarn package:commit -m '🌟 feat: minor release'",
+    ":major": "yarn version major && yarn package:commit -m '🚨 BREAKING CHANGE: major release'",
     "release": "yarn semantic-release",
     "release2": "yarn clean && yarn build:release && git push && git push --tags && yarn npm publish --access public",
     "release2:dry": "yarn clean && yarn build:release && npm pack --dry-run",
