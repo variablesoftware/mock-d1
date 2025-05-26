@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/variablesoftware/mock-d1/compare/v0.2.2...v0.3.0) (2025-05-26)
+
+
+### Features
+
+* add coverage reporting and markdown summary generation to CI workflow ([01593af](https://github.com/variablesoftware/mock-d1/commit/01593af623a1701bba8de7aa906d409d8b5a78e2))
+
 ## [0.2.2](https://github.com/variablesoftware/mock-d1/compare/v0.2.1...v0.2.2) (2025-05-26)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@variablesoftware/mock-d1",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "🎛️🗂️🧠 Mock D1 Database implementation for testing Cloudflare Workers",
   "keywords": [
     "cloudflare",
