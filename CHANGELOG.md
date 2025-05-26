@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/variablesoftware/mock-d1/compare/v0.3.1...v0.3.2) (2025-05-26)
+
+
+### Bug Fixes
+
+* add git authentication setup for markdown summary commit in CI workflow ([aea3b93](https://github.com/variablesoftware/mock-d1/commit/aea3b938c8e3d97d6bfb9e2abb7e7d0680b661b1))
+
 ## [0.3.1](https://github.com/variablesoftware/mock-d1/compare/v0.3.0...v0.3.1) (2025-05-26)
 
 
