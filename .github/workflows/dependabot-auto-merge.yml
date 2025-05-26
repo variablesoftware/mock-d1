@@ -31,37 +31,8 @@ jobs:
       - run: yarn install --immutable
       - run: yarn lint
       - run: yarn build
-      - run: yarn vitest
-      - run: ./scripts/smoke-local.sh
-
-  coverage-markdown:
-    runs-on: ubuntu-latest
-    needs: build-test
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-          cache: "npm"
-      - run: corepack enable && corepack prepare yarn@4.9.1 --activate
-      - run: yarn install --immutable
-      - run: yarn vitest --coverage
-      - name: Generate markdown coverage table
-         run: yarn dlx coverage-badges --output coverage/coverage-summary.md
-      - name: Set git user
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Commit markdown summary
-        run: |
-          git add -f coverage/coverage-summary.md
-          git commit -m "🧪 chore(coverage): update markdown summary [skip ci]" || echo "No changes to commit"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+      - run: yarn vitest --coverage --reporter=verbose
+      - run: ./scripts/smoke-local.sh        
 
   # automatically bump and publish on fix: feat: BREAKING CHANGE:
   test-bump-and-publish-test:
