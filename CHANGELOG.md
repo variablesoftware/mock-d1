@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/variablesoftware/mock-d1/compare/v0.2.0...v0.2.1) (2025-05-26)
+
+
+### Bug Fixes
+
+* making a markdown list, checking it twice. ([5e48594](https://github.com/variablesoftware/mock-d1/commit/5e48594729c4289efed7a412b84642b5646bbf6c))
+
 # [0.2.0](https://github.com/variablesoftware/mock-d1/compare/v0.1.11...v0.2.0) (2025-05-26)
 
 
