@@ -1,4 +1,4 @@
+# Copilot README
 
-# https://code.visualstudio.com/docs/copilot/copilot-customization
-
-# https://code.visualstudio.com/docs/copilot/copilot-tips-and-tricks#_prompt-engineering
+- [Copilot Customication](https://code.visualstudio.com/docs/copilot/copilot-customization)
+- [Prompt Engineering](https://code.visualstudio.com/docs/copilot/copilot-tips-and-tricks#_prompt-engineering)
