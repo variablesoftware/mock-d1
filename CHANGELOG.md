@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/variablesoftware/mock-d1/compare/v0.3.2...v0.3.3) (2025-05-26)
+
+
+### Bug Fixes
+
+* add write permissions for contents in coverage-markdown job ([3aaf36a](https://github.com/variablesoftware/mock-d1/commit/3aaf36a75b302d11f516d5b376a3022ecd7b44d1))
+
 ## [0.3.2](https://github.com/variablesoftware/mock-d1/compare/v0.3.1...v0.3.2) (2025-05-26)
 
 
