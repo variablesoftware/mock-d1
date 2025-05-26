@@ -1,3 +1,13 @@
+## [0.2.2](https://github.com/variablesoftware/mock-d1/compare/v0.2.1...v0.2.2) (2025-05-26)
+
+
+### Bug Fixes
+
+* reorder commit message guidelines for clarity ([c426de7](https://github.com/variablesoftware/mock-d1/commit/c426de714f3369fdbbe6fa5ee3d7c31a4fa279bd))
+* reorganize emoji usage explanations for clarity ([ac2720b](https://github.com/variablesoftware/mock-d1/commit/ac2720bd9b7080e54211139cb4f078d52e26ab27))
+* uncomment diagnostic commands in pre-push hook ([ead3970](https://github.com/variablesoftware/mock-d1/commit/ead3970ad7a4dcdca443dd6aa597b0002dde2fff))
+* uncomment linting commands in pre-commit and pre-push hooks ([2d7548c](https://github.com/variablesoftware/mock-d1/commit/2d7548cda75323c16b568db0cfcf0fe57346019b))
+
 ## [0.2.1](https://github.com/variablesoftware/mock-d1/compare/v0.2.0...v0.2.1) (2025-05-26)
 
 
