@@ -94,8 +94,8 @@ export function parseWhereClause(where: string, depth = 0): WhereAstNode {
   if (eq) {
     let value: unknown = eq[2];
     if (eq[3]) value = ':' + eq[3]; // bind
-    else if (eq[4] !== undefined) value = eq[4]; // single-quoted string
-    else if (eq[5] !== undefined) value = eq[5]; // double-quoted string
+    else if (eq[4] !== undefined) value = eq[4]; // single-quoted string (strip quotes)
+    else if (eq[5] !== undefined) value = '"' + eq[5] + '"'; // double-quoted string (keep quotes)
     return {
       type: 'comparison',
       column: eq[1],
