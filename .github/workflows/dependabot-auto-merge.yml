@@ -44,6 +44,7 @@ jobs:
           node-version: "lts/*"
       - run: corepack enable && corepack prepare yarn@4.9.1 --activate
       - run: yarn install --immutable
+      - run: yarn vitest --coverage --reporter=verbose
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@v2.3.6
         with:
