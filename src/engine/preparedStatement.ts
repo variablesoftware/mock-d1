@@ -19,6 +19,8 @@ import { handleAlterTableDropColumn } from './statementHandlers/handleAlterTable
 import { log } from "@variablesoftware/logface";
 import { validateSqlOrThrow } from './sqlValidation.js';
 import { d1Error, D1_ERRORS } from './errors.js';
+import { makeD1Result } from './resultUtils.js';
+import type { FakeD1Result } from "../types/MockD1Database.js";
 // log import removed (was unused)
 // validateSQLSyntax import removed (was unused)
 // Removed unused 'Logger' interface
@@ -49,11 +51,27 @@ export function createPreparedStatement(
     throw d1Error('UNSUPPORTED_SQL');
   }
 
-  // Only validate for unsupported SQL, not malformed SQL (malformed errors must be thrown at run-time)
-  // Fix: Do not throw on missing bind arguments at prepare-time, only at run-time in handlers
-  // Patch: Do not throw for missing bind arguments at prepare-time for INSERT/SELECT/UPDATE/DELETE
-  // Only check for unsupported SQL and skip malformed/missing bind errors here
-  validateSqlOrThrow(sql, { skipMalformed: true });
+  // Explicit malformed DML SQL checks at prepare-time
+  if (/^\s*select\s+from\b/i.test(sql)) {
+    throw d1Error('MALFORMED_SELECT');
+  }
+  if (/^\s*insert\s+into\b(?!.*values)/i.test(sql)) {
+    throw d1Error('MALFORMED_INSERT');
+  }
+  if (/^\s*delete\s*($|;|\s)/i.test(sql)) {
+    throw d1Error('MALFORMED_DELETE');
+  }
+  if (/^\s*update\s+\S+\s*($|;|\s)/i.test(sql)) {
+    throw d1Error('MALFORMED_UPDATE');
+  }
+
+  // Validate for malformed SQL at prepare-time for DML (SELECT, INSERT, DELETE, UPDATE)
+  if (/^\s*select\b/i.test(sql) || /^\s*insert\b/i.test(sql) || /^\s*delete\b/i.test(sql) || /^\s*update\b/i.test(sql)) {
+    validateSqlOrThrow(sql, { skipMalformed: false });
+  } else {
+    // Only validate for unsupported SQL, not malformed SQL (malformed errors must be thrown at run-time)
+    validateSqlOrThrow(sql, { skipMalformed: true });
+  }
 
   // Defensive: ensure all tables in db have a valid columns array
   for (const table of db.values()) {
@@ -64,79 +82,7 @@ export function createPreparedStatement(
 
   let bindArgs: Record<string, unknown> = {};
 
-  const upperSql = sql.trim().toUpperCase();
-  // Accept SQL keywords as table/column names by relaxing regexes
-  if (upperSql.startsWith("CREATE ")) {
-    // Only CREATE TABLE is supported; all others are unsupported
-    if (!upperSql.startsWith("CREATE TABLE")) {
-      throw d1Error('UNSUPPORTED_SQL');
-    }
-    // CREATE TABLE <name> (<columns>) or CREATE TABLE <name> ()
-    // Accept empty parens as valid (CREATE TABLE foo ())
-    const match = /^CREATE TABLE\s+\S+\s*\((.*)\)/i.exec(sql);
-    if (!match) {
-      // No parens at all (CREATE TABLE foo) is not allowed
-      throw d1Error('UNSUPPORTED_SQL');
-    }
-    // Do not throw for empty columns (match[1] may be empty string)
-    // Do not throw for missing bind arguments or malformed columns here
-  }
-  if (upperSql.startsWith("SELECT")) {
-    // SELECT must have at least: SELECT <columns> FROM <table>
-    if (!/^SELECT\s+.+\s+FROM\s+\S+/i.test(sql)) {
-      throw d1Error('MALFORMED_SELECT');
-    }
-  } else if (upperSql.startsWith("INSERT")) {
-    // INSERT must have: INSERT INTO <table> (<cols>) VALUES (<vals>)
-    if (!/^INSERT INTO \S+ \(.*\) VALUES \(.*\)/i.test(sql)) {
-      throw d1Error('MALFORMED_INSERT');
-    }
-    // Parse columns and values for further validation
-    const colMatch = sql.match(/insert into\s+([`"])?(\w+)\1?(?:\s*\(([^)]*)\))?/i);
-    const valuesMatch = sql.match(/values\s*\(([^)]+)\)/i);
-    if (colMatch && valuesMatch) {
-      const columns = colMatch[3]
-        ? colMatch[3].split(",").map(s => s.trim())
-        : [];
-      const values = valuesMatch[1]
-        ? valuesMatch[1].split(",").map(s => s.trim())
-        : [];
-      // Check for column/value count mismatch
-      if (columns.length !== values.length || columns.length === 0) {
-        throw d1Error('MALFORMED_INSERT');
-      }
-      // Check for duplicate column names (case-insensitive for unquoted, exact for quoted)
-      const seenUnquoted = new Set<string>();
-      const seenQuoted = new Set<string>();
-      for (const col of columns) {
-        const quotedMatch = col.match(/^([`"\[])(.+)\1/);
-        if (quotedMatch) {
-          const name = quotedMatch[2];
-          if (seenQuoted.has(name)) {
-            throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
-          }
-          seenQuoted.add(name);
-        } else {
-          const lower = col.toLowerCase();
-          if (seenUnquoted.has(lower)) {
-            throw d1Error('MALFORMED_INSERT', 'Duplicate column name in INSERT');
-          }
-          seenUnquoted.add(lower);
-        }
-      }
-      // Do NOT check for missing bind arguments here; let the handler throw at run-time
-    }
-  } else if (upperSql.startsWith("DELETE")) {
-    // DELETE must have: DELETE FROM <table>
-    if (!/^DELETE FROM \S+/i.test(sql)) {
-      throw d1Error('MALFORMED_DELETE');
-    }
-  } else if (upperSql.startsWith("UPDATE")) {
-    // UPDATE must have: UPDATE <table> SET <col> = <val>
-    if (!/^UPDATE\s+\S+\s+SET\s+.+/i.test(sql)) {
-      throw d1Error('MALFORMED_UPDATE');
-    }
-  }
+  // Do not perform any further validation here. All malformed SQL and missing bind argument errors must be thrown at run-time in the statement handlers.
 
   /**
    * Parses and executes the SQL statement according to the mode.
@@ -228,76 +174,83 @@ export function createPreparedStatement(
      * Executes the statement and returns the result.
      * @returns The result of the statement execution.
      */
-    async run(_args?: unknown) {
-      const result = parseAndRun("run");
-      log.debug('[run] result', { result });
-      if (result && result.success === false) {
-        const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
-        if (errorObj) {
-          log.debug('[run] result.error', { error: errorObj });
-          log.debug('[run] result.error.message', { message: errorObj.message });
+    async run(_args?: unknown): Promise<FakeD1Result<unknown>> {
+      try {
+        const result = parseAndRun("run");
+        log.debug('[run] result', { result });
+        if (!result || typeof result !== 'object' || !('results' in result && 'success' in result && 'meta' in result)) {
+          // Defensive: always return a valid FakeD1Result shape
+          return makeD1Result([], {
+            duration: 0,
+            size_after: 0,
+            rows_read: 0,
+            rows_written: 0,
+            last_row_id: 0,
+            changed_db: false,
+            changes: 0
+          });
         }
-        const isMissingBind =
-          (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
-          (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
-        if (isMissingBind) {
-          log.debug('[run] throwing MISSING_BIND');
-          throw d1Error('MISSING_BIND');
+        if (result.success === false) {
+          throw d1Error('GENERIC');
         }
-        log.debug('[run] throwing UNSUPPORTED_SQL');
-        throw d1Error('UNSUPPORTED_SQL');
+        return result as FakeD1Result;
+      } catch (err) {
+        throw err;
       }
-      return result;
     },
     /**
      * Executes the statement and returns all matching results.
      * @returns The result of the statement execution.
      */
-    async all(_args?: unknown) {
-      const result = parseAndRun("all");
-      log.debug('[all] result', { result });
-      if (result && result.success === false) {
-        const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
-        if (errorObj) {
-          log.debug('[all] result.error', { error: errorObj });
-          log.debug('[all] result.error.message', { message: errorObj.message });
+    async all(_args?: unknown): Promise<FakeD1Result<unknown>> {
+      try {
+        const result = parseAndRun("all");
+        log.debug('[all] result', { result });
+        if (!result || typeof result !== 'object' || !('results' in result && 'success' in result && 'meta' in result)) {
+          return makeD1Result([], {
+            duration: 0,
+            size_after: 0,
+            rows_read: 0,
+            rows_written: 0,
+            last_row_id: 0,
+            changed_db: false,
+            changes: 0
+          });
         }
-        const isMissingBind =
-          (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
-          (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
-        if (isMissingBind) {
-          log.debug('[all] throwing MISSING_BIND');
-          throw d1Error('MISSING_BIND');
+        if (result.success === false) {
+          throw d1Error('GENERIC');
         }
-        log.debug('[all] throwing UNSUPPORTED_SQL');
-        throw d1Error('UNSUPPORTED_SQL');
+        return result as FakeD1Result;
+      } catch (err) {
+        throw err;
       }
-      return result;
     },
     /**
      * Executes the statement and returns the first matching result.
      * @returns The result of the statement execution.
      */
-    async first(_args?: unknown) {
-      const result = parseAndRun("first");
-      log.debug('[first] result', { result });
-      if (result && result.success === false) {
-        const errorObj = (typeof result === 'object' && 'error' in result && result.error && typeof (result.error as { message?: unknown }).message === 'string') ? result.error as { message: string } : undefined;
-        if (errorObj) {
-          log.debug('[first] result.error', { error: errorObj });
-          log.debug('[first] result.error.message', { message: errorObj.message });
+    async first(_args?: unknown): Promise<FakeD1Result<unknown>> {
+      try {
+        const result = parseAndRun("first");
+        log.debug('[first] result', { result });
+        if (!result || typeof result !== 'object' || !('results' in result && 'success' in result && 'meta' in result)) {
+          return makeD1Result([], {
+            duration: 0,
+            size_after: 0,
+            rows_read: 0,
+            rows_written: 0,
+            last_row_id: 0,
+            changed_db: false,
+            changes: 0
+          });
         }
-        const isMissingBind =
-          (errorObj && /Missing bind argument/i.test(errorObj.message)) ||
-          (Array.isArray(result.results) && result.results.length === 0 && result.meta && result.meta.rows_written === 0 && result.meta.changes === 0 && result.meta.last_row_id === 0);
-        if (isMissingBind) {
-          log.debug('[first] throwing MISSING_BIND');
-          throw d1Error('MISSING_BIND');
+        if (result.success === false) {
+          throw d1Error('GENERIC');
         }
-        log.debug('[first] throwing UNSUPPORTED_SQL');
-        throw d1Error('UNSUPPORTED_SQL');
+        return result as FakeD1Result;
+      } catch (err) {
+        throw err;
       }
-      return result;
     },
     /**
      * Executes the statement and returns the raw result array.
