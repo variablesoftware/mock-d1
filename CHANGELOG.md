@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/variablesoftware/mock-d1/compare/v0.1.11...v0.2.0) (2025-05-26)
+
+
+### Features
+
+* **release:** v0.2.1 kitchen sink, unclogged? ([3552cdd](https://github.com/variablesoftware/mock-d1/commit/3552cdd7cc6c9dd14ab3b0e8246ce1503da327ef))
+
 # [0.1.0](https://github.com/variablesoftware/mock-d1/compare/v0.0.1...v0.1.0) (2025-05-09)
 
 
