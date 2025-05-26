@@ -34,6 +34,22 @@ jobs:
       - run: yarn vitest --coverage --reporter=verbose
       - run: ./scripts/smoke-local.sh        
 
+  coveralls-runner:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - run: corepack enable && corepack prepare yarn@4.9.1 --activate
+      - run: yarn install --immutable
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v2.3.6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage/lcov.info
+
   # automatically bump and publish on fix: feat: BREAKING CHANGE:
   test-bump-and-publish-test:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
