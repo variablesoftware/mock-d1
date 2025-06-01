@@ -9,7 +9,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["package.json", "CHANGELOG.md", "yarn.lock"],
+        "assets": ["package.json", "CHANGELOG.md", "pnpm-lock.yaml"],
         "message": "🤖 chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]

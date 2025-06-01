@@ -95,7 +95,7 @@ environment_defaults:
   test_framework: "Vitest + Mocks + Miniflare"
   http_framework: "Hono"
   bindings: ["KV", "D1", "AI", "WASM"]
-  package_manager: "Yarn"
+  package_manager: "pnpm"
 
 # === Inference and Merging Logic ===
 # Controls GPT's logic for combining, deduplicating, and unifying topics

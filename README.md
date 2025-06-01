@@ -17,7 +17,7 @@
 ## 🔧 Installation
 
 ```bash
-yarn add --dev @variablesoftware/mock-d1
+pnpm add --dev @variablesoftware/mock-d1
 ```
 
 > This package assumes a test environment with [Vitest](https://vitest.dev/) and support for ESM.
@@ -76,7 +76,7 @@ Tested using `vitest run`, with coverage for:
 Run tests:
 
 ```bash
-yarn test
+pnpm test
 ```
 
 ---

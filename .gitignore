@@ -8,16 +8,11 @@ docs/text*.txt
 *.*-
 *.swp
 
-# Yarn PnP loader files (Yarn 2+)
-.pnp.*
-.yarn/cache/
-.yarn/unplugged/
-.yarn/build-state.yml
-.yarn/install-state.gz
+# pnpm lockfile
+pnpm-lock.yaml
 
 # Node dependencies
 node_modules/
-.yarn/
 
 # Output directories
 dist/

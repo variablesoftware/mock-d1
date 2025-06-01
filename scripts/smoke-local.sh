@@ -17,17 +17,17 @@ PKG_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$PKG_DIR"
 
 # Build and pack the local package
-yarn build
+pnpm build
 PKG_TGZ=$(npm pack --loglevel warn | tail -n1)
 
 # Create temp dir and install the tarball
 TMPDIR=$(mktemp -d)
 cd "$TMPDIR"
-yarn init -y > /dev/null
+pnpm init -y > /dev/null
 # Use node_modules linker for compatibility
-yarn config set nodeLinker node-modules
+pnpm config set node-linker=node-modules
 
-yarn add "$PKG_DIR/$PKG_TGZ"
+pnpm add "$PKG_DIR/$PKG_TGZ"
 
 # Diagnostics: list files in dist and show entry
 ls -lR "node_modules/@variablesoftware/mock-d1/dist"

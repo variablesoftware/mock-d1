@@ -13,15 +13,15 @@ then
   exit 1
 fi
 
-# Check if yarn is available
-if ! command -v yarn &> /dev/null
+# Check if pnpm is available
+if ! command -v pnpm &> /dev/null
 then
-  echo "🔧 Yarn is not installed yet. Installing correct Yarn version using corepack..."
-  corepack prepare yarn@stable --activate
+  echo "🔧 pnpm is not installed yet. Installing correct pnpm version using corepack..."
+  corepack prepare pnpm@latest --activate
 fi
 
 # Install dependencies
-echo "📦 Installing dependencies with Yarn..."
-yarn install
+echo "📦 Installing dependencies with pnpm..."
+pnpm install
 
 echo "✅ Project setup complete!"
