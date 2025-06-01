@@ -8,9 +8,6 @@ docs/text*.txt
 *.*-
 *.swp
 
-# pnpm lockfile
-pnpm-lock.yaml
-
 # Node dependencies
 node_modules/
 
