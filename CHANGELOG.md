@@ -1,3 +1,10 @@
+## [0.3.4](https://github.com/variablesoftware/mock-d1/compare/v0.3.3...v0.3.4) (2025-06-01)
+
+
+### Bug Fixes
+
+* 🛠️ Empty commit message ([a239a01](https://github.com/variablesoftware/mock-d1/commit/a239a016d76f097fd2697f5de18cfc76fa7267c7))
+
 ## [0.3.3](https://github.com/variablesoftware/mock-d1/compare/v0.3.2...v0.3.3) (2025-05-26)
 
 
