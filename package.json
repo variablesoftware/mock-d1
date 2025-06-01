@@ -40,7 +40,7 @@
     "**/*.{ts,js,mjs,cts}": "eslint --fix"
   },
   "scripts": {
-    "bump": "git commit --allow-empty -m '🛠️ fix: Empty commit message'",
+    "bump": "git commit --allow-empty -m 'fix: 🛠️ Empty commit message'",
     "build": "pnpm tsc",
     "prepare": "pnpm husky install",
     "watch:build": "pnpm tsc --watch",
