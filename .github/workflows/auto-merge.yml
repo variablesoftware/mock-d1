@@ -1,0 +1,39 @@
+# Auto Merge PRs for stage/main after CI passes
+# Maintainers: This workflow automates PR merges to 'stage' and 'main' after tests pass.
+# Uses pascalgn/automerge-action for robust, label-free automerge.
+
+name: Auto Merge PRs
+
+# Triggered by pull request events
+on:
+  pull_request:
+    types: [labeled, synchronize, opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: write
+  checks: read
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  automerge:
+    if: github.event.pull_request.base.ref == 'stage' || github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-and-test
+      - name: Automerge PR if CI passes
+        uses: pascalgn/automerge-action@v0.16.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_METHOD: squash
+          MERGE_LABELS: ''
+          MERGE_FORKS: 'true'
+          MERGE_RETRIES: '10'
+          MERGE_RETRY_SLEEP: '60000'
+          UPDATE_LABELS: ''
+          UPDATE_METHOD: 'rebase'
+          LOG: 'DEBUG'

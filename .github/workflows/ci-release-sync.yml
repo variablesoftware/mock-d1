@@ -1,0 +1,158 @@
+# Combined CI, Release, and Stage Sync Workflow
+#
+# This workflow automates the full CI/CD pipeline for the Cloudflare Worker monorepo using pnpm, git, and GitHub Actions.
+#
+# **Workflow Overview:**
+#
+# - **Triggers:**
+#   - Runs on push and pull_request events for main, stage, and all common feature/maintenance branch globs (feature/**, bugfix/**, fix/**, hotfix/**, release/**, dependabot/**, renovate/**, chore/**, test/**).
+#
+# - **Jobs:**
+#   1. **test**: Runs setup, install, and tests (via composite action) for all pushes and PRs. This is the base job for all other jobs.
+#   2. **release**: Runs only on push to main, after test passes. Publishes a release using semantic-release and pushes to npm if configured.
+#   3. **sync-stage-with-main**: Runs only on push to main, after a successful release. Attempts to fast-forward stage to main; if not possible, creates a PR from main to stage for manual review.
+#
+# **Logic Branching:**
+#
+# - All pushes and PRs trigger the test job for all important branches.
+# - The release job only runs if the event is a push to main and test passes.
+# - The sync-stage-with-main job only runs if the event is a push to main and the release job succeeds.
+#   - If stage can be fast-forwarded to main, it does so and pushes.
+#   - If not, it creates a PR from main to stage for manual review and merge.
+#
+# **Key Features:**
+# - DRY: All setup/test logic is in a composite action.
+# - Safe: Stage promotion is fast-forward only or via PR, never force-pushed.
+# - Robust: Handles all common branch types and automates the full CI/CD lifecycle.
+# - Minimal Redundancy: Only one test run per event, and downstream jobs depend on its success.
+#
+# See README.md for more details on branch management and promotion helpers.
+#
+# ---
+
+name: CI, Release, and Stage Sync
+
+on:
+  push:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+  pull_request:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+
+concurrency:
+  group: ci-release-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-and-test
+
+  release:
+    name: Release (main only)
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: true
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - name: Debug pnpm environment
+        run: |
+          echo "PATH: $PATH"
+          echo "NODE VERSION: $(node --version)"
+          echo "NPM VERSION: $(npm --version)"
+          echo "PNPM VERSION: $(pnpm --version)"
+          which pnpm
+          env | grep -E 'PNPM|NPM|NODE|PATH'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCOPE: ${{ secrets.scope }}
+          NODE_AUTH_TOKEN: ${{ secrets.VS_NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.VS_NPM_TOKEN }}
+          HUSKY: 0
+
+  # sync-stage-with-main:
+  #   name: Sync Stage with Main (after release)
+  #   needs: release
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pull-requests: write
+  #   steps:
+  #     - name: Checkout all branches
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Set up Git user
+  #       run: |
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+  #     - name: Fetch all branches
+  #       run: |
+  #         git fetch origin main
+  #         git fetch origin stage
+  #     - name: Check if stage can be fast-forwarded to main
+  #       id: ffcheck
+  #       run: |
+  #         git checkout stage
+  #         if git merge-base --is-ancestor stage main; then
+  #           echo "can_ff=true" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "can_ff=false" >> $GITHUB_OUTPUT
+  #         fi
+  #     - name: Fast-forward stage to main (if possible)
+  #       if: steps.ffcheck.outputs.can_ff == 'true'
+  #       run: |
+  #         git checkout stage
+  #         git merge --ff-only main
+  #         git push origin stage
+  #     - name: Create PR from main to stage (if fast-forward not possible)
+  #       if: steps.ffcheck.outputs.can_ff == 'false'
+  #       uses: repo-sync/pull-request@v2
+  #       with:
+  #         source_branch: main
+  #         destination_branch: stage
+  #         pr_title: "chore: sync stage with main after release"
+  #         pr_body: "Automated PR to sync stage with main after a semantic-release bump."
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}

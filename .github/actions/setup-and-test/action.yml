@@ -1,0 +1,38 @@
+name: Setup and Test
+
+description: Common setup and test steps for all workflows
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "lts/*"
+    - uses: pnpm/action-setup@v3
+      with:
+        version: latest
+    - name: Debug pnpm environment
+      run: |
+        echo "PATH: $PATH"
+        echo "NODE VERSION: $(node --version)"
+        echo "NPM VERSION: $(npm --version)"
+        echo "PNPM VERSION: $(pnpm --version)"
+        which pnpm
+        env | grep -E 'PNPM|NPM|NODE|PATH'
+      shell: bash
+    - name: install immutable
+      run: pnpm install --frozen-lockfile
+      shell: bash
+    - name: lint
+      run: pnpm run lint
+      shell: bash
+    - name: build
+      run: pnpm run build
+      shell: bash
+    - name: Run Tests
+      run: pnpm vitest --coverage --reporter=verbose
+      env:
+        SMOKE: 1
+        DEBUG: 1
+      shell: bash

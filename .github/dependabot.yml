@@ -1,30 +1,39 @@
 version: 2
 updates:
-  - package-ecosystem: "pnpm"
+  - package-ecosystem: "npm" # use npm for pnpm monorepo
     directory: "/"
     schedule:
       interval: "daily"
-      time: "05:00"
+      time: "03:00"
       timezone: "America/Los_Angeles"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
+    # was 25, now 2 to avoid too many PRs at once
+    # See: https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates#open-pull-requests-limit
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "🤖 chore(deps)"
     versioning-strategy: increase
     allow:
       - dependency-type: "all"
     labels:
       - "dependencies"
-    reviewers:
-      - "px"
-    assignees:
-      - "px"
+    # reviewers:
+    #   - "px"
+    # assignees:
+    #   - "px"
     rebase-strategy: auto
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        # Allow security updates for vitest
+        # See: https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates#ignore
+        # Only ignore version updates, not security updates
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every week
-      interval: "weekly"
+      # Check for updates to GitHub Actions every X, daily, weekly, ?
+      interval: "daily"
+      time: "02:00"
+      timezone: "America/Los_Angeles"
