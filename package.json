@@ -107,6 +107,6 @@
   },
   "dependencies": {
     "@variablesoftware/logface": "^0.5.1",
-    "zod": "^3.25.49"
+    "zod": "^3.25.51"
   }
 }
