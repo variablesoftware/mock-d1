@@ -1,0 +1,53 @@
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+  RUN_TEST: 1
+  RUN_BUILD: 1
+  RUN_LINT: 1
+  NODE_AUTH_TOKEN: ${{ secrets.VS_NPM_TOKEN }}
+  HUSKY: 0
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+      
+  pull_request:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+
+concurrency:
+  group: call-ci-release-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-ci-release-sync:
+    # uses: ./.github/workflows/ci-semantic-release-sync.yml
+    # uses: variablesoftware/github-workflows/.github/workflows/ci-semantic-release-sync.yml@v1.0.1
+    uses: variablesoftware/github-workflows/.github/workflows/ci-semantic-release-sync.yml@main
+    # uses: variablesoftware/github-workflows/.github/workflows/ci-semantic-release-sync.yml@38038641148ab8eaa7c9be80d9041a6c8c80641e
+    # No secrets block needed for GITHUB_TOKEN
+    # No additional changes required
+    
