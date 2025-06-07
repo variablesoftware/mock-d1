@@ -19,7 +19,7 @@
           { "type": "refactor", "release": "major" },
           { "type": "refactor", "release": "major", "subject": "/^([\u231A-\uD83E\uDDFF]|:[^:]+:)/" },
           { "type": "fix", "release": "patch", "subject": "/^([\u231A-\uD83E\uDDFF]|:[^:]+:)/" },
-          { "type": "chore", "release": "patch", "subject": "/^([\u231A-\uD83E\uDDFF]|:[^:]+:)/" }
+          { "type": "chore", "release": false, "subject": "/^([\u231A-\uD83E\uDDFF]|:[^:]+:)/" }
         ],
         "parserOpts": {
           "headerPattern": "^(?:[\\W_]+)?([\\w-]+)(?:\\(([^)]+)\\))?:?\\s(.+)$"
