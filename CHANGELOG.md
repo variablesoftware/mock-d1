@@ -1,3 +1,5 @@
+## [0.6.2](https://github.com/variablesoftware/mock-d1/compare/v0.6.1...v0.6.2) (2025-06-09)
+
 ## [0.6.1](https://github.com/variablesoftware/mock-d1/compare/v0.6.0...v0.6.1) (2025-06-07)
 
 # [0.6.0](https://github.com/variablesoftware/mock-d1/compare/v0.5.3...v0.6.0) (2025-06-07)
