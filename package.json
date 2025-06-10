@@ -100,7 +100,7 @@
     "lcov-summary": "^1.0.1",
     "prettier": "^3.5.3",
     "semantic-release": "^24.2.5",
-    "terser": "^5.41.0",
+    "terser": "^5.42.0",
     "tslib": "^2.8.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
