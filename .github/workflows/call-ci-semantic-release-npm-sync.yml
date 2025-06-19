@@ -5,33 +5,33 @@ env:
 on:
   workflow_dispatch:
 
-  push:
-    branches:
-      - main
-      - stage
-      - 'feature/**'
-      - 'bugfix/**'
-      - 'fix/**'
-      - 'hotfix/**'
-      - 'release/**'
-      - 'dependabot/**'
-      - 'renovate/**'
-      - 'chore/**'
-      - 'test/**'
+  # push:
+  #   branches:
+  #     - main
+  #     - stage
+  #     - 'feature/**'
+  #     - 'bugfix/**'
+  #     - 'fix/**'
+  #     - 'hotfix/**'
+  #     - 'release/**'
+  #     - 'dependabot/**'
+  #     - 'renovate/**'
+  #     - 'chore/**'
+  #     - 'test/**'
       
-  pull_request:
-    branches:
-      - main
-      - stage
-      - 'feature/**'
-      - 'bugfix/**'
-      - 'fix/**'
-      - 'hotfix/**'
-      - 'release/**'
-      - 'dependabot/**'
-      - 'renovate/**'
-      - 'chore/**'
-      - 'test/**'
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - stage
+  #     - 'feature/**'
+  #     - 'bugfix/**'
+  #     - 'fix/**'
+  #     - 'hotfix/**'
+  #     - 'release/**'
+  #     - 'dependabot/**'
+  #     - 'renovate/**'
+  #     - 'chore/**'
+  #     - 'test/**'
 
 jobs:
   call-ci-release-sync:

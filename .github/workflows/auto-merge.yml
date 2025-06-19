@@ -6,8 +6,35 @@ name: Auto Merge PRs
 
 # Triggered by pull request events
 on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
   pull_request:
     types: [labeled, synchronize, opened, reopened, ready_for_review]
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
 
 permissions:
   pull-requests: write
