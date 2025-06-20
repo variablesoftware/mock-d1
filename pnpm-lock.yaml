@@ -9,15 +9,15 @@ importers:
   .:
     dependencies:
       '@variablesoftware/logface':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0
       zod:
         specifier: ^3.25.67
         version: 3.25.67
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20250619.0
-        version: 4.20250619.0
+        specifier: ^4.20250620.0
+        version: 4.20250620.0
       '@eslint/js':
         specifier: ^9.29.0
         version: 9.29.0
@@ -116,8 +116,8 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@cloudflare/workers-types@4.20250619.0':
-    resolution: {integrity: sha512-OYmVTA45rEEsOmchtltDnrG6BBaOPB7LUGKoyE8AwkfanUOc3/wwuMZ50i1jq6NKrV1TZLsKUKzrwe1NtVGOzQ==}
+  '@cloudflare/workers-types@4.20250620.0':
+    resolution: {integrity: sha512-EVvRB/DJEm6jhdKg+A4Qm4y/ry1cIvylSgSO3/f/Bv161vldDRxaXM2YoQQWFhLOJOw0qtrHsKOD51KYxV1XCw==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -676,8 +676,8 @@ packages:
     resolution: {integrity: sha512-xoh5rJ+tgsRKoXnkBPFRLZ7rjKM0AfVbC68UZ/ECXoDbfggb9RbEySN359acY1vS3qZ0jVTVWzbtfapwm5ztxw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@variablesoftware/logface@0.6.0':
-    resolution: {integrity: sha512-Qill7ZCsbrnzXDFGPKFPbA05CznzxRYQMW4Rt9nKU0Cu1b26sPq7bCUaYRTSMrE8b1+3DTGR3I1pY/ebufL7hQ==}
+  '@variablesoftware/logface@0.7.0':
+    resolution: {integrity: sha512-6TnXI1CyExUE+S29TfGqieZ5tTSCREViJcaEtVgQpVJTZWI+KmzGzC0uHGzK6E+f40POkllaPkapbtUrvJ8CIQ==}
 
   '@vitest/coverage-v8@3.2.4':
     resolution: {integrity: sha512-EyF9SXU6kS5Ku/U82E259WSnvg6c8KTjppUncuNdm5QHpe17mwREHnjDzozC8x9MZ0xfBUFSaLkRv4TMA75ALQ==}
@@ -2447,7 +2447,7 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@cloudflare/workers-types@4.20250619.0': {}
+  '@cloudflare/workers-types@4.20250620.0': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -2978,7 +2978,7 @@ snapshots:
       '@typescript-eslint/types': 8.34.1
       eslint-visitor-keys: 4.2.1
 
-  '@variablesoftware/logface@0.6.0': {}
+  '@variablesoftware/logface@0.7.0': {}
 
   '@vitest/coverage-v8@3.2.4(vitest@3.2.4(@types/node@24.0.3)(terser@5.43.1))':
     dependencies:
