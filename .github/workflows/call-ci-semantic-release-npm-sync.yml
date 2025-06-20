@@ -1,3 +1,5 @@
+name: Call CI Semantic Release NPM Sync
+
 env:
   ACTIONS_STEP_DEBUG: true
   ACTIONS_RUNNER_DEBUG: true
@@ -35,6 +37,7 @@ on:
 
 jobs:
   call-ci-release-sync:
+    name: Call CI Release Sync
     # uses: ./.github/workflows/ci-semantic-release-sync.yml
     # uses: variablesoftware/github-workflows/.github/workflows/ci-semantic-release-sync.yml@v1
     uses: variablesoftware/github-workflows/.github/workflows/ci-semantic-release-sync.yml@main
@@ -49,4 +52,3 @@ jobs:
       RUN_BUILD: 1
       RUN_TEST: 1
       RUN_RELEASE: 1
-        

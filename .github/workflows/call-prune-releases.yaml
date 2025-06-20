@@ -1,3 +1,5 @@
+name: Call Prune Releases
+
 on:
   workflow_dispatch:
 
@@ -31,6 +33,7 @@ on:
 
 jobs:
   prune_releases:
+    name: Prune Releases
     uses: variablesoftware/github-workflows/.github/workflows/prune-releases.yaml@main
     with:
       releases_to_keep: 5  # Optional, defaults to 3
