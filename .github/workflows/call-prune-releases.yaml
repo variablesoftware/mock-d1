@@ -1,0 +1,37 @@
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+  pull_request:
+    types: [labeled, synchronize, opened, reopened, ready_for_review]
+    branches:
+      - main
+      - stage
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'fix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'dependabot/**'
+      - 'renovate/**'
+      - 'chore/**'
+      - 'test/**'
+
+jobs:
+  prune_releases:
+    uses: variablesoftware/github-workflows/.github/workflows/prune-releases.yaml@main
+    with:
+      releases_to_keep: 5  # Optional, defaults to 3
+    secrets: inherit
