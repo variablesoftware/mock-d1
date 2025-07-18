@@ -1,11 +1,13 @@
-name: Call Prune Releases
-
 on:
   workflow_dispatch:
   release:
     types: [published, created]
 
+permissions:
+  contents: write
 jobs:
   prune_releases:
     uses: variablesoftware/github-workflows/.github/workflows/prune-releases.yaml@main
+    with:
+      releases_to_keep: 2  # Optional, defaults to 3
     secrets: inherit
