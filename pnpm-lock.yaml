@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@variablesoftware/logface':
-        specifier: ^0.7.1
-        version: 0.7.1
+        specifier: ^0.7.3
+        version: 0.7.3
       zod:
         specifier: ^4.0.5
         version: 4.0.5
@@ -673,8 +673,8 @@ packages:
     resolution: {integrity: sha512-YzfhzcTnZVPiLfP/oeKtDp2evwvHLMe0LOy7oe+hb9KKIumLNohYS9Hgp1ifwpu42YWxhZE8yieggz6JpqO/1w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@variablesoftware/logface@0.7.1':
-    resolution: {integrity: sha512-BMxcACDw9nbAcqK4wzOhuqT2GjOEjKpE0l7Yzcm0iTa0jL/cgJe5gxUxxeYQZjnmlDln8s7+C7S4I8GyolFj/g==}
+  '@variablesoftware/logface@0.7.3':
+    resolution: {integrity: sha512-eVKSp9EyLmHA/JbtThg9F/DrbhIsxTop2DfX4FSdQKiwQC5dwW8rk1QKdjPT3YgF9EFJ01+Y4UYNr12e0sdwDA==}
 
   '@vitest/coverage-v8@3.2.4':
     resolution: {integrity: sha512-EyF9SXU6kS5Ku/U82E259WSnvg6c8KTjppUncuNdm5QHpe17mwREHnjDzozC8x9MZ0xfBUFSaLkRv4TMA75ALQ==}
@@ -2972,7 +2972,7 @@ snapshots:
       '@typescript-eslint/types': 8.37.0
       eslint-visitor-keys: 4.2.1
 
-  '@variablesoftware/logface@0.7.1': {}
+  '@variablesoftware/logface@0.7.3': {}
 
   '@vitest/coverage-v8@3.2.4(vitest@3.2.4(@types/node@24.0.14)(terser@5.43.1))':
     dependencies:
