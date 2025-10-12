@@ -40,8 +40,8 @@ importers:
         specifier: ^14.1.0
         version: 14.1.0(semantic-release@24.2.9(typescript@5.9.2))
       '@types/node':
-        specifier: ^24.5.2
-        version: 24.5.2
+        specifier: ^24.7.2
+        version: 24.7.2
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.39.0
         version: 8.39.0(@typescript-eslint/parser@8.45.0(eslint@9.35.0)(typescript@5.9.2))(eslint@9.35.0)(typescript@5.9.2)
@@ -50,7 +50,7 @@ importers:
         version: 8.45.0(eslint@9.35.0)(typescript@5.9.2)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
-        version: 3.2.4(vitest@3.2.4(@types/node@24.5.2)(terser@5.44.0))
+        version: 3.2.4(vitest@3.2.4(@types/node@24.7.2)(terser@5.44.0))
       eslint:
         specifier: ^9.35.0
         version: 9.35.0
@@ -83,7 +83,7 @@ importers:
         version: 5.9.2
       vitest:
         specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.5.2)(terser@5.44.0)
+        version: 3.2.4(@types/node@24.7.2)(terser@5.44.0)
 
 packages:
 
@@ -613,8 +613,8 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
-  '@types/node@24.5.2':
-    resolution: {integrity: sha512-FYxk1I7wPv3K2XBaoyH2cTnocQEu8AOZ60hPbsyukMPLv5/5qr7V1i8PLHdl6Zf87I+xZXFvPCXYjiTFq+YSDQ==}
+  '@types/node@24.7.2':
+    resolution: {integrity: sha512-/NbVmcGTP+lj5oa4yiYxxeBjRivKQ5Ns1eSZeB99ExsEQ6rX5XYU1Zy/gGxY/ilqtD4Etx9mKyrPxZRetiahhA==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -2290,8 +2290,8 @@ packages:
     engines: {node: '>=0.8.0'}
     hasBin: true
 
-  undici-types@7.12.0:
-    resolution: {integrity: sha512-goOacqME2GYyOZZfb5Lgtu+1IDmAlAEu5xnD3+xTzS10hT0vzpf0SPjkXwAw9Jm+4n/mQGDP3LO8CPbYROeBfQ==}
+  undici-types@7.14.0:
+    resolution: {integrity: sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==}
 
   unicode-emoji-modifier-base@1.0.0:
     resolution: {integrity: sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g==}
@@ -2929,9 +2929,9 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
-  '@types/node@24.5.2':
+  '@types/node@24.7.2':
     dependencies:
-      undici-types: 7.12.0
+      undici-types: 7.14.0
 
   '@types/normalize-package-data@2.4.4': {}
 
@@ -3071,7 +3071,7 @@ snapshots:
 
   '@variablesoftware/logface@0.7.3': {}
 
-  '@vitest/coverage-v8@3.2.4(vitest@3.2.4(@types/node@24.5.2)(terser@5.44.0))':
+  '@vitest/coverage-v8@3.2.4(vitest@3.2.4(@types/node@24.7.2)(terser@5.44.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
@@ -3086,7 +3086,7 @@ snapshots:
       std-env: 3.9.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@24.5.2)(terser@5.44.0)
+      vitest: 3.2.4(@types/node@24.7.2)(terser@5.44.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -3098,13 +3098,13 @@ snapshots:
       chai: 5.2.1
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.0.5(@types/node@24.5.2)(terser@5.44.0))':
+  '@vitest/mocker@3.2.4(vite@7.0.5(@types/node@24.7.2)(terser@5.44.0))':
     dependencies:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 7.0.5(@types/node@24.5.2)(terser@5.44.0)
+      vite: 7.0.5(@types/node@24.7.2)(terser@5.44.0)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -4606,7 +4606,7 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
-  undici-types@7.12.0: {}
+  undici-types@7.14.0: {}
 
   unicode-emoji-modifier-base@1.0.0: {}
 
@@ -4635,13 +4635,13 @@ snapshots:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
 
-  vite-node@3.2.4(@types/node@24.5.2)(terser@5.44.0):
+  vite-node@3.2.4(@types/node@24.7.2)(terser@5.44.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.0.5(@types/node@24.5.2)(terser@5.44.0)
+      vite: 7.0.5(@types/node@24.7.2)(terser@5.44.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -4656,7 +4656,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.0.5(@types/node@24.5.2)(terser@5.44.0):
+  vite@7.0.5(@types/node@24.7.2)(terser@5.44.0):
     dependencies:
       esbuild: 0.25.6
       fdir: 6.4.6(picomatch@4.0.3)
@@ -4665,15 +4665,15 @@ snapshots:
       rollup: 4.45.1
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 24.5.2
+      '@types/node': 24.7.2
       fsevents: 2.3.3
       terser: 5.44.0
 
-  vitest@3.2.4(@types/node@24.5.2)(terser@5.44.0):
+  vitest@3.2.4(@types/node@24.7.2)(terser@5.44.0):
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.0.5(@types/node@24.5.2)(terser@5.44.0))
+      '@vitest/mocker': 3.2.4(vite@7.0.5(@types/node@24.7.2)(terser@5.44.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -4691,11 +4691,11 @@ snapshots:
       tinyglobby: 0.2.14
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-      vite: 7.0.5(@types/node@24.5.2)(terser@5.44.0)
-      vite-node: 3.2.4(@types/node@24.5.2)(terser@5.44.0)
+      vite: 7.0.5(@types/node@24.7.2)(terser@5.44.0)
+      vite-node: 3.2.4(@types/node@24.7.2)(terser@5.44.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 24.5.2
+      '@types/node': 24.7.2
     transitivePeerDependencies:
       - jiti
       - less
