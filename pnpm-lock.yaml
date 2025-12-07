@@ -58,8 +58,8 @@ importers:
         specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.1)
       fast-check:
-        specifier: ^4.3.0
-        version: 4.3.0
+        specifier: ^4.4.0
+        version: 4.4.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -1153,8 +1153,8 @@ packages:
     resolution: {integrity: sha512-JhFGDVJ7tmDJItKhYgJCGLOWjuK9vPxiXoUFLwLDc99NlmklilbiQJwoctZtt13+xMw91MCk/REan6MWHqDjyA==}
     engines: {node: '>=12.0.0'}
 
-  fast-check@4.3.0:
-    resolution: {integrity: sha512-JVw/DJSxVKl8uhCb7GrwanT9VWsCIdBkK3WpP37B/Au4pyaspriSjtrY2ApbSFwTg3ViPfniT13n75PhzE7VEQ==}
+  fast-check@4.4.0:
+    resolution: {integrity: sha512-s87BFAp8YaWYOBXjbTxeotaOhmA4hPYAyk9gBTFxdab25P6eAlqrryUvVMA2qd9bT/0Xq+YNJGtoVhJd/BxI4g==}
     engines: {node: '>=12.17.0'}
 
   fast-content-type-parse@3.0.0:
@@ -3621,7 +3621,7 @@ snapshots:
 
   expect-type@1.2.2: {}
 
-  fast-check@4.3.0:
+  fast-check@4.4.0:
     dependencies:
       pure-rand: 7.0.1
 
